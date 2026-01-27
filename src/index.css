@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Roboto+Condensed:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Main theme colors */
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Golden accent */
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 0% 10%;
+
+    /* Cyan accent */
+    --secondary: 186 100% 45%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 186 100% 45%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 51 50% 25%;
+    --input: 0 0% 18%;
+    --ring: 51 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Custom RPG colors */
+    --gold: 51 100% 50%;
+    --gold-dark: 43 100% 35%;
+    --cyan: 186 100% 45%;
+    --cyan-glow: 186 100% 60%;
+    --dark-bg: 0 0% 10%;
+    --dark-surface: 0 0% 14%;
+    --dark-elevated: 0 0% 18%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 51 100% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 51 50% 25%;
+    --sidebar-ring: 51 100% 50%;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 51 100% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 186 100% 45%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 186 100% 45%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 51 50% 25%;
+    --input: 0 0% 18%;
+    --ring: 51 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-game;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .text-gold-gradient {
+    background: linear-gradient(180deg, hsl(51 100% 60%) 0%, hsl(43 100% 45%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-cyan-gradient {
+    background: linear-gradient(180deg, hsl(186 100% 60%) 0%, hsl(186 100% 40%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-gold {
+    border-color: hsl(51 100% 50% / 0.4);
+  }
+
+  .border-gold-strong {
+    border-color: hsl(51 100% 50% / 0.7);
+  }
+
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(51 100% 50% / 0.3);
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 20px hsl(186 100% 50% / 0.3);
+  }
+
+  .bg-dark-surface {
+    background-color: hsl(0 0% 14% / 0.95);
+  }
+
+  .bg-dark-elevated {
+    background-color: hsl(0 0% 18% / 0.95);
+  }
+
+  .rpg-card {
+    @apply bg-dark-surface border border-gold rounded-lg p-4;
+    background: linear-gradient(180deg, hsl(0 0% 16% / 0.95) 0%, hsl(0 0% 12% / 0.95) 100%);
+  }
+
+  .rpg-button {
+    @apply px-6 py-2 rounded font-bold transition-all duration-200;
+    background: linear-gradient(180deg, hsl(51 100% 55%) 0%, hsl(43 100% 40%) 100%);
+    color: hsl(0 0% 10%);
+    text-shadow: 0 1px 0 hsl(51 100% 70% / 0.5);
+  }
+
+  .rpg-button:hover {
+    background: linear-gradient(180deg, hsl(51 100% 60%) 0%, hsl(43 100% 45%) 100%);
+    box-shadow: 0 0 15px hsl(51 100% 50% / 0.5);
+    transform: translateY(-1px);
+  }
+
+  .rpg-button-green {
+    background: linear-gradient(180deg, hsl(120 60% 45%) 0%, hsl(120 60% 30%) 100%);
+  }
+
+  .rpg-button-green:hover {
+    background: linear-gradient(180deg, hsl(120 60% 50%) 0%, hsl(120 60% 35%) 100%);
+    box-shadow: 0 0 15px hsl(120 60% 40% / 0.5);
+  }
+
+  .nav-link {
+    @apply px-4 py-2 text-foreground/80 font-medium transition-colors duration-200 hover:text-primary;
+  }
+
+  .nav-link.active {
+    @apply text-primary;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Cinzel', serif;
+  }
+
+  .font-game {
+    font-family: 'Roboto Condensed', sans-serif;
+  }
+}
