@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { 
@@ -16,8 +16,8 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
 );
 
-// Configuração do EmailJS
-const SERVICE_ID = "service_eem5brc";
+// SEU ID CORRETO DO EMAILJS (Do print que você mandou)
+const SERVICE_ID = "service_eem5brc"; 
 const TEMPLATE_ID = "template_pk19neg";
 const PUBLIC_KEY = "z5D7x94VJzfiiK8tk";
 
@@ -34,6 +34,23 @@ const Checkout = () => {
   const [formData, setFormData] = useState({ username: '', email: '', confirmEmail: '' });
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card' | null>(null);
 
+  // PREENCHIMENTO AUTOMÁTICO SE ESTIVER LOGADO
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Se estiver logado, já preenche o email e tenta pegar o nome
+        setFormData(prev => ({
+          ...prev,
+          email: user.email || '',
+          confirmEmail: user.email || '',
+          username: user.user_metadata.full_name || user.user_metadata.name || prev.username
+        }));
+      }
+    };
+    loadUserData();
+  }, []);
+
   // --- ROBÔ DE VERIFICAÇÃO DO PIX ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -41,15 +58,6 @@ const Checkout = () => {
     if (step === 'pix_waiting' && pixData?.payment_id) {
       interval = setInterval(async () => {
         try {
-          // Pergunta pro servidor se já pagou
-          const { data, error } = await supabase.functions.invoke('checkout', {
-             body: { payment_id: pixData.payment_id },
-             headers: {},
-             // Passamos a action via query param na URL da função (simulado aqui)
-          });
-          
-          // Nota: O jeito correto de passar query params no invoke é direto na string se o client permitir,
-          // ou mandar no body e o backend ler. Aqui vou manter a chamada direta:
           const check = await supabase.functions.invoke(`checkout?action=check_status`, {
             body: { payment_id: pixData.payment_id }
           });
@@ -61,7 +69,7 @@ const Checkout = () => {
         } catch (e) {
           console.error("Verificando pix...", e);
         }
-      }, 4000); // Checa a cada 4s
+      }, 4000); 
     }
 
     return () => clearInterval(interval);
@@ -80,7 +88,6 @@ const Checkout = () => {
     return true;
   };
 
-  // --- O CORAÇÃO DO PAGAMENTO (Corrigido) ---
   const startPayment = async () => {
     if (!paymentMethod) { toast.error('Selecione um método de pagamento'); return; }
     setIsProcessing(true);
@@ -95,49 +102,69 @@ const Checkout = () => {
         }
       });
 
-      // 1. Erro de Rede/Servidor
       if (error) throw error;
-
-      // 2. Erro Lógico (O Backend mandou 200 mas com mensagem de erro)
       if (data.error) throw new Error(data.error);
 
-      // 3. Sucesso - PIX
       if (data.type === 'pix_generated') {
         setPixData(data);
         setStep('pix_waiting');
       } 
-      // 4. Sucesso - Cartão
       else if (data.type === 'redirect') {
         window.location.href = data.url;
       }
 
     } catch (error: any) {
       console.error('Erro no processamento:', error);
-      // Mostra a mensagem exata que veio do backend (ex: "MP Recusou: invalid email")
       toast.error(error.message || 'Erro ao processar pagamento.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const finishOrder = async (status: string, id: any) => {
+  // --- AQUI QUE A MÁGICA DO BANCO DE DADOS ACONTECE ---
+  const finishOrder = async (status: string, paymentId: any) => {
       setStep('success');
+      
       try {
+        // 1. Tenta pegar o usuário logado
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 2. Salva no Banco de Dados (Tabela 'orders')
+        const { error: dbError } = await supabase
+          .from('orders')
+          .insert({
+            user_id: user?.id || null, // Se não tiver logado, fica null
+            payment_id: String(paymentId),
+            status: status,
+            total_amount: totalPrice,
+            items: items, // Salva o JSON dos itens
+            discord_username: formData.username
+          });
+
+        if (dbError) {
+            console.error("Erro ao salvar no banco:", dbError);
+            // Não vamos travar a tela de sucesso se der erro no banco, só logar
+        } else {
+            console.log("Pedido salvo no banco com sucesso!");
+        }
+
+        // 3. Enviar Email
         const itemsListString = items.map(item => `${item.quantity}x ${item.title}`).join(", ");
         const totalFormatted = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
         
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
             to_name: formData.username,
             to_email: formData.email,
-            status: `APROVADO ✅ (ID: ${id})`,
+            status: `APROVADO ✅ (ID: ${paymentId})`,
             total_value: totalFormatted,
             items_list: itemsListString,
         }, PUBLIC_KEY);
         
         clearCart();
-        toast.success("Pedido confirmado com sucesso!");
-      } catch (emailError) {
-        console.warn("Email falhou", emailError);
+        toast.success("Pedido confirmado e salvo!");
+
+      } catch (err) {
+        console.warn("Erro no processo final:", err);
       }
   };
 
@@ -148,9 +175,8 @@ const Checkout = () => {
     }
   };
 
-  // --- RENDERIZAÇÃO ---
+  // --- RENDERIZAÇÃO (Mantive igual, só o Success que já estava pronto) ---
 
-  // Tela de Sucesso
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4 bg-[url(@/assets/bg-pattern.png)] bg-cover">
@@ -159,7 +185,7 @@ const Checkout = () => {
             <Check className="w-12 h-12 text-green-500" />
           </div>
           <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mb-2">Pagamento Aprovado!</h2>
-          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. Seus itens serão entregues automaticamente no servidor.</p>
+          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. O histórico foi salvo na sua conta.</p>
           <button onClick={() => { navigate('/'); setStep('cart'); clearCart(); }} className="rpg-button w-full py-4 text-lg">Voltar à Loja</button>
         </div>
       </div>

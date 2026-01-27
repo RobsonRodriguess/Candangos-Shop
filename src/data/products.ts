@@ -52,19 +52,6 @@ export const products: Product[] = [
     ]
   },
   // --- ITEM DE TESTE (R$ 1,00) ---
-  {
-    id: 999,
-    title: "🧪 Teste de Sistema",
-    description: "Item técnico para validar o fluxo de pagamento automático.",
-    price: 1.50,
-    image: "https://cdn-icons-png.flaticon.com/512/4140/4140047.png", // Ícone de poção/teste
-    category: 'items',
-    benefits: [
-      "Validação do QR Code Pix",
-      "Teste de Recebimento de E-mail",
-      "Verificação da Tela de Sucesso"
-    ]
-  }
 ];
 
 export const categories = [

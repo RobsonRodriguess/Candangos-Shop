@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Users, Copy, Check } from 'lucide-react';
+import { AuthButton } from './AuthButton'; // Certifique-se que o caminho está certo
 
 const TopBar = () => {
   const [copied, setCopied] = useState(false);
-  // Agora começa com "..." enquanto carrega
   const [playersOnline, setPlayersOnline] = useState<number | string>("..."); 
   
   const serverIP = "hytale.hywer.net";
-  const SERVER_ID = '1461132354096726171'; // ID do Hywer
+  const SERVER_ID = '1461132354096726171'; 
 
   useEffect(() => {
     const fetchOnlineCount = async () => {
@@ -15,7 +15,6 @@ const TopBar = () => {
         const response = await fetch(`https://discord.com/api/guilds/${SERVER_ID}/widget.json`);
         const data = await response.json();
         
-        // Atualiza com o número real do Discord
         if (data && data.presence_count !== undefined) {
           setPlayersOnline(data.presence_count);
         } else {
@@ -28,8 +27,6 @@ const TopBar = () => {
     };
 
     fetchOnlineCount();
-    
-    // Atualiza a cada 60 segundos (opcional)
     const interval = setInterval(fetchOnlineCount, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -41,8 +38,8 @@ const TopBar = () => {
   };
 
   return (
-    <div className="w-full bg-muted/50 border-b border-gold/30 py-2 px-4">
-      <div className="container mx-auto flex justify-between items-center text-sm">
+    <div className="w-full bg-muted/50 border-b border-gold/30 py-2 px-4 backdrop-blur-md">
+      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm gap-2 sm:gap-0">
         
         {/* Lado Esquerdo: Contador Dinâmico */}
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -52,23 +49,33 @@ const TopBar = () => {
           </span>
         </div>
         
-        {/* Lado Direito: Botão Copiar IP */}
-        <button
-          onClick={copyIP}
-          className="flex items-center gap-2 px-3 py-1 rounded bg-muted hover:bg-muted/80 border border-gold/30 transition-all duration-200 hover:border-primary/60 cursor-pointer"
-        >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 text-green-500 animate-in zoom-in duration-300" />
-              <span className="text-green-500 font-bold">Copiado!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground hover:text-white transition-colors">{serverIP}</span>
-            </>
-          )}
-        </button>
+        {/* Lado Direito: Ações (IP + Login) */}
+        <div className="flex items-center gap-3">
+            {/* Botão Copiar IP */}
+            <button
+            onClick={copyIP}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-black/40 hover:bg-black/60 border border-gold/10 transition-all duration-200 hover:border-primary/60 cursor-pointer text-xs sm:text-sm"
+            >
+            {copied ? (
+                <>
+                <Check className="w-3 h-3 text-green-500 animate-in zoom-in" />
+                <span className="text-green-500 font-bold">Copiado!</span>
+                </>
+            ) : (
+                <>
+                <Copy className="w-3 h-3 text-muted-foreground" />
+                <span className="text-muted-foreground hover:text-white transition-colors font-mono">{serverIP}</span>
+                </>
+            )}
+            </button>
+
+            {/* Divisória visual pequena */}
+            <div className="h-4 w-[1px] bg-white/10 hidden sm:block"></div>
+
+            {/* Botão de Login Discord */}
+            <AuthButton />
+        </div>
+
       </div>
     </div>
   );

@@ -4,9 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
+import Admin from "./pages/Admin";
+
+// Importações das Páginas
 import Index from "./pages/Index";
 import Checkout from "./pages/Checkout";
+import MyOrders from "./pages/MyOrders"; // <--- ADICIONADO AQUI
 import NotFound from "./pages/NotFound";
+
 import CartDrawer from "./components/CartDrawer";
 import CartButton from "./components/CartButton";
 
@@ -22,6 +27,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/admin" element={<Admin />} />
+            
+            {/* ROTA DE PEDIDOS */}
+            <Route path="/meus-pedidos" element={<MyOrders />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
