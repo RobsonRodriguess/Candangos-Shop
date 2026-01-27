@@ -16,7 +16,7 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
 );
 
-// SEU ID CORRETO DO EMAILJS (Do print que você mandou)
+// SEU ID CORRETO DO EMAILJS
 const SERVICE_ID = "service_eem5brc"; 
 const TEMPLATE_ID = "template_pk19neg";
 const PUBLIC_KEY = "z5D7x94VJzfiiK8tk";
@@ -39,7 +39,6 @@ const Checkout = () => {
     const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Se estiver logado, já preenche o email e tenta pegar o nome
         setFormData(prev => ({
           ...prev,
           email: user.email || '',
@@ -126,29 +125,25 @@ const Checkout = () => {
       setStep('success');
       
       try {
-        // 1. Tenta pegar o usuário logado
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 2. Salva no Banco de Dados (Tabela 'orders')
         const { error: dbError } = await supabase
           .from('orders')
           .insert({
-            user_id: user?.id || null, // Se não tiver logado, fica null
+            user_id: user?.id || null, 
             payment_id: String(paymentId),
             status: status,
             total_amount: totalPrice,
-            items: items, // Salva o JSON dos itens
+            items: items, 
             discord_username: formData.username
           });
 
         if (dbError) {
             console.error("Erro ao salvar no banco:", dbError);
-            // Não vamos travar a tela de sucesso se der erro no banco, só logar
         } else {
             console.log("Pedido salvo no banco com sucesso!");
         }
 
-        // 3. Enviar Email
         const itemsListString = items.map(item => `${item.quantity}x ${item.title}`).join(", ");
         const totalFormatted = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
         
@@ -175,7 +170,7 @@ const Checkout = () => {
     }
   };
 
-  // --- RENDERIZAÇÃO (Mantive igual, só o Success que já estava pronto) ---
+  // --- RENDERIZAÇÃO ---
 
   if (step === 'success') {
     return (
@@ -195,7 +190,7 @@ const Checkout = () => {
   // Carrinho Vazio
   if (items.length === 0 && step !== 'pix_waiting') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
         <div className="text-center opacity-50">
           <Wallet className="w-20 h-20 mx-auto mb-4" />
           <h2 className="text-2xl font-bold">Seu inventário está vazio</h2>
@@ -245,7 +240,8 @@ const Checkout = () => {
 
         {renderSteps()}
 
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8">
+        {/* Layout Grid (Empilha no mobile, divide no PC) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
           
           {/* LADO ESQUERDO (Formulários) */}
           <div className="space-y-6">
@@ -257,20 +253,28 @@ const Checkout = () => {
                   <Wallet className="text-primary" /> Seus Itens
                 </h2>
                 {items.map((item) => (
-                  <div key={item.id} className="rpg-card group hover:border-primary/50 transition-colors p-4 flex items-center gap-4 bg-black/40 backdrop-blur-sm">
-                    <div className="w-20 h-20 rounded bg-gradient-to-br from-black to-gray-900 border border-white/10 flex items-center justify-center p-2">
+                  // RESPONSIVIDADE AQUI: Flex-col no mobile, flex-row no PC
+                  <div key={item.id} className="rpg-card group hover:border-primary/50 transition-colors p-4 flex flex-col sm:flex-row items-center gap-4 bg-black/40 backdrop-blur-sm">
+                    {/* Imagem centralizada no mobile */}
+                    <div className="w-20 h-20 shrink-0 rounded bg-gradient-to-br from-black to-gray-900 border border-white/10 flex items-center justify-center p-2">
                       <img src={item.image} alt={item.title} className="w-full h-full object-contain drop-shadow-lg" />
                     </div>
-                    <div className="flex-1">
+                    
+                    {/* Texto centralizado no mobile */}
+                    <div className="flex-1 w-full text-center sm:text-left">
                       <h4 className="font-bold text-lg">{item.title}</h4>
                       <p className="text-primary font-bold">R$ {item.price.toFixed(2).replace('.', ',')}</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-black/50 rounded-lg p-1 border border-white/5">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-white/10 rounded"><Minus className="w-4 h-4" /></button>
-                      <span className="w-6 text-center font-bold">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 hover:bg-white/10 rounded"><Plus className="w-4 h-4" /></button>
+
+                    {/* Controles: Espalhados no mobile */}
+                    <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
+                        <div className="flex items-center gap-3 bg-black/50 rounded-lg p-1 border border-white/5">
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-white/10 rounded"><Minus className="w-4 h-4" /></button>
+                            <span className="w-6 text-center font-bold">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 hover:bg-white/10 rounded"><Plus className="w-4 h-4" /></button>
+                        </div>
+                        <button onClick={() => removeItem(item.id)} className="p-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><Trash2 className="w-5 h-5" /></button>
                     </div>
-                    <button onClick={() => removeItem(item.id)} className="p-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><Trash2 className="w-5 h-5" /></button>
                   </div>
                 ))}
                 <div className="pt-4">
@@ -301,7 +305,7 @@ const Checkout = () => {
                     </div>
                   </div>
                   
-                  <div className="grid md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Email</label>
                       <div className="relative">
@@ -344,7 +348,7 @@ const Checkout = () => {
                   <CreditCard className="text-primary" /> Método de Pagamento
                 </h2>
                 
-                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   {/* Botão PIX */}
                   <button 
                     onClick={() => setPaymentMethod('pix')} 
@@ -423,7 +427,7 @@ const Checkout = () => {
                      <p className="text-emerald-400 text-sm mb-6 font-medium">Abra o app do seu banco e pague via Pix.</p>
                      
                      <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-6 shadow-inner">
-                        <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code Pix" className="w-56 h-56 object-contain" />
+                        <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code Pix" className="w-56 h-56 object-contain max-w-full" />
                      </div>
 
                      <div className="space-y-4">
@@ -446,8 +450,9 @@ const Checkout = () => {
           </div>
 
           {/* LADO DIREITO (RESUMO) */}
+          {/* Mantém a altura automática para não quebrar no mobile */}
           <div className="h-fit space-y-4">
-            <div className="rpg-card sticky top-8 bg-black/60 backdrop-blur-xl border-gold/20 p-6 shadow-2xl">
+            <div className="rpg-card lg:sticky lg:top-8 bg-black/60 backdrop-blur-xl border-gold/20 p-6 shadow-2xl">
               <h3 className="text-xl font-display font-bold mb-6 pb-4 border-b border-white/10 flex items-center gap-2">
                 <ShieldCheck className="text-primary w-5 h-5"/> Resumo do Pedido
               </h3>

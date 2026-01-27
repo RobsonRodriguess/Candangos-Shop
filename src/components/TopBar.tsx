@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Copy, Check } from 'lucide-react';
-import { AuthButton } from './AuthButton'; // Certifique-se que o caminho está certo
+import { AuthButton } from './AuthButton'; 
 
 const TopBar = () => {
   const [copied, setCopied] = useState(false);
@@ -38,23 +38,28 @@ const TopBar = () => {
   };
 
   return (
-    <div className="w-full bg-muted/50 border-b border-gold/30 py-2 px-4 backdrop-blur-md">
-      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm gap-2 sm:gap-0">
+    // Adicionei z-50 para garantir que o dropdown do admin fique por cima de tudo
+    <div className="w-full bg-muted/50 border-b border-gold/30 py-3 px-4 backdrop-blur-md relative z-50">
+      
+      {/* VOLTEI: flex-col no celular (um embaixo do outro) para ter espaço */}
+      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         
-        {/* Lado Esquerdo: Contador Dinâmico */}
-        <div className="flex items-center gap-2 text-muted-foreground">
+        {/* Lado Esquerdo: Contador */}
+        <div className="flex items-center gap-2 text-muted-foreground order-2 sm:order-1">
           <Users className="w-4 h-4 text-secondary" />
-          <span>
+          <span className="text-sm">
             <span className="text-secondary font-bold">{playersOnline}</span> Jogadores Online
           </span>
         </div>
         
         {/* Lado Direito: Ações (IP + Login) */}
-        <div className="flex items-center gap-3">
+        {/* order-1 no mobile faz o Login aparecer em cima (mais importante) */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-end order-1 sm:order-2">
+            
             {/* Botão Copiar IP */}
             <button
             onClick={copyIP}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-black/40 hover:bg-black/60 border border-gold/10 transition-all duration-200 hover:border-primary/60 cursor-pointer text-xs sm:text-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-black/40 hover:bg-black/60 border border-gold/10 transition-all duration-200 hover:border-primary/60 cursor-pointer text-xs sm:text-sm whitespace-nowrap"
             >
             {copied ? (
                 <>
@@ -69,11 +74,14 @@ const TopBar = () => {
             )}
             </button>
 
-            {/* Divisória visual pequena */}
+            {/* Divisória apenas no PC */}
             <div className="h-4 w-[1px] bg-white/10 hidden sm:block"></div>
 
             {/* Botão de Login Discord */}
-            <AuthButton />
+            {/* O AuthButton vai usar o espaço que precisar agora sem quebrar */}
+            <div className="shrink-0">
+               <AuthButton />
+            </div>
         </div>
 
       </div>

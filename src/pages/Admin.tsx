@@ -26,14 +26,12 @@ export default function Admin() {
   async function checkAdminAndFetch() {
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Segurança no Frontend: Se não for você, chuta pra fora
     if (!user || user.email !== ADMIN_EMAIL) {
       toast.error("Área restrita apenas para Admins.");
       navigate('/');
       return;
     }
 
-    // Busca TODOS os pedidos do banco
     const { data, error } = await supabase
       .from('orders')
       .select('*')
@@ -55,7 +53,6 @@ export default function Admin() {
   const totalVendas = orders.filter(o => o.status === 'approved').length;
   const vendasPendentes = orders.filter(o => o.status === 'pending').length;
 
-  // Filtro da busca
   const filteredOrders = orders.filter(order => 
     order.discord_username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.payment_id?.includes(searchTerm)
@@ -67,21 +64,21 @@ export default function Admin() {
     <div className="min-h-screen bg-background py-8 px-4 font-sans text-foreground bg-[url(@/assets/bg-pattern.png)] bg-fixed">
       <div className="container mx-auto max-w-6xl">
         
-        {/* CABEÇALHO */}
-        <div className="flex justify-between items-center mb-8">
+        {/* CABEÇALHO: Flex-col no mobile para não espremer o botão */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <h1 className="text-3xl font-display font-bold text-red-500 flex items-center gap-2">
                 <ShieldAlert className="w-8 h-8" /> PAINEL ADMIN
             </h1>
-            <button onClick={() => navigate('/')} className="text-sm text-muted-foreground hover:text-white flex items-center gap-1">
+            <button onClick={() => navigate('/')} className="text-sm text-muted-foreground hover:text-white flex items-center gap-1 border border-white/10 px-3 py-1 rounded-full bg-black/40">
                 Sair do Modo Admin <ExternalLink size={14}/>
             </button>
         </div>
 
         {/* CARDS DE ESTATÍSTICAS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Faturamento Total */}
+            {/* Faturamento */}
             <div className="rpg-card bg-black/60 border-green-500/30 p-6 flex items-center gap-4">
-                <div className="p-4 rounded-full bg-green-500/20 text-green-400">
+                <div className="p-4 rounded-full bg-green-500/20 text-green-400 shrink-0">
                     <TrendingUp size={32} />
                 </div>
                 <div>
@@ -90,9 +87,9 @@ export default function Admin() {
                 </div>
             </div>
 
-            {/* Vendas Aprovadas */}
+            {/* Vendas */}
             <div className="rpg-card bg-black/60 border-primary/30 p-6 flex items-center gap-4">
-                <div className="p-4 rounded-full bg-primary/20 text-primary">
+                <div className="p-4 rounded-full bg-primary/20 text-primary shrink-0">
                     <ShoppingBag size={32} />
                 </div>
                 <div>
@@ -103,7 +100,7 @@ export default function Admin() {
 
             {/* Pendentes */}
             <div className="rpg-card bg-black/60 border-yellow-500/30 p-6 flex items-center gap-4">
-                <div className="p-4 rounded-full bg-yellow-500/20 text-yellow-400">
+                <div className="p-4 rounded-full bg-yellow-500/20 text-yellow-400 shrink-0">
                     <Users size={32} />
                 </div>
                 <div>
@@ -115,22 +112,24 @@ export default function Admin() {
 
         {/* TABELA DE PEDIDOS */}
         <div className="rpg-card bg-black/80 backdrop-blur-md p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white">Últimas Transações</h3>
-                <div className="relative">
+            {/* Título e Busca: Flex-col no mobile para a busca ficar em baixo e larga */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h3 className="text-xl font-bold text-white self-start md:self-center">Últimas Transações</h3>
+                <div className="relative w-full md:w-auto">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <input 
                         type="text" 
                         placeholder="Buscar por Nick ou ID..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9 pr-4 py-2 bg-black/50 border border-white/10 rounded-lg text-sm focus:border-primary/50 outline-none w-64"
+                        className="pl-9 pr-4 py-2 bg-black/50 border border-white/10 rounded-lg text-sm focus:border-primary/50 outline-none w-full md:w-64"
                     />
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+            {/* Scroll Horizontal para a tabela não quebrar o layout */}
+            <div className="overflow-x-auto pb-2">
+                <table className="w-full text-left text-sm min-w-[600px]"> 
                     <thead>
                         <tr className="border-b border-white/10 text-muted-foreground uppercase text-xs">
                             <th className="pb-3 pl-2">Data</th>
