@@ -16,10 +16,74 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
 );
 
-// SEU ID CORRETO DO EMAILJS
+// SEUS DADOS DO EMAILJS
 const SERVICE_ID = "service_eem5brc"; 
 const TEMPLATE_ID = "template_pk19neg";
 const PUBLIC_KEY = "z5D7x94VJzfiiK8tk";
+
+// --- FUNÇÃO GERADORA DE EMAIL HTML V2.0 (Design Premium) ---
+const generateEmailHTML = (userName: string, items: any[], total: string, paymentId: string) => {
+  const date = new Date().toLocaleDateString('pt-BR');
+  const logoUrl = "https://media.discordapp.net/attachments/1057787918468526131/1465732500067455121/4dd4da52fa571380fa2d4f269867c2f5_logo.png?ex=697a2d44&is=6978dbc4&hm=b73af4519f72ba7c6d1a6cc4a04f67b9f4588932803e79e908af9fe3cf373786&=&format=webp&quality=lossless";
+
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #27272a; width: 60px;">
+        <img src="${item.image}" alt="${item.title}" width="48" height="48" style="border-radius: 8px; object-fit: cover; border: 1px solid #3f3f46; display: block;" />
+      </td>
+      <td style="padding: 12px 15px; border-bottom: 1px solid #27272a; color: #e4e4e7; font-family: 'Segoe UI', sans-serif;">
+        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.title}</div>
+        <div style="color: #71717a; font-size: 12px;">Qtd: ${item.quantity}</div>
+      </td>
+      <td style="padding: 12px 0; border-bottom: 1px solid #27272a; text-align: right; color: #fff; font-weight: 600; font-family: 'Segoe UI', sans-serif; white-space: nowrap;">
+        R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px 10px;">
+      
+      <div style="max-width: 480px; margin: 0 auto; background-color: #09090b; border-radius: 16px; border: 1px solid #27272a; overflow: hidden; box-shadow: 0 10px 40px -10px rgba(74, 222, 128, 0.2);">
+        
+        <div style="background-color: #18181b; padding: 30px 20px; text-align: center; border-bottom: 2px solid #4ade80;">
+          <img src="${logoUrl}" width="70" style="margin-bottom: 15px; border-radius: 12px;">
+          <h1 style="color: #4ade80; margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
+          <p style="color: #a1a1aa; margin-top: 8px; font-size: 14px;">Olá, <span style="color: #fff;">${userName}</span>! Obrigado pela compra.</p>
+        </div>
+
+        <div style="padding: 30px 25px;">
+          
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            ${itemsHtml}
+          </table>
+
+          <div style="text-align: right; margin-bottom: 30px;">
+            <p style="color: #71717a; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1px;">Valor Total</p>
+            <p style="color: #4ade80; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -1px;">${total}</p>
+          </div>
+
+          <div style="background-color: #18181b; border-radius: 8px; padding: 15px; text-align: center; color: #52525b; font-size: 11px; margin-bottom: 25px;">
+            <p style="margin: 0 0 5px 0;">ID da Transação: <span style="color: #a1a1aa; font-family: monospace;">#${paymentId}</span></p>
+            <p style="margin: 0;">Data: <span style="color: #a1a1aa;">${date}</span></p>
+          </div>
+
+          <div style="text-align: center;">
+            <a href="https://discord.gg/Hcu7y4Cz" style="background-color: #5865F2; color: #fff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; transition: background 0.2s;">
+              Entrar na Comunidade VIP
+            </a>
+          </div>
+
+        </div>
+        
+        <div style="background-color: #09090b; padding: 15px; text-align: center; border-top: 1px solid #27272a;">
+          <p style="color: #3f3f46; font-size: 11px; margin: 0;">© 2026 Hywer Store. Todos os direitos reservados.</p>
+        </div>
+
+      </div>
+    </div>
+  `;
+};
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -63,6 +127,7 @@ const Checkout = () => {
 
           if (check.data?.status === 'approved') {
              clearInterval(interval);
+             // AQUI MUDOU: O status vem do Mercado Pago, e passamos para o finishOrder
              finishOrder(check.data.status, pixData.payment_id);
           }
         } catch (e) {
@@ -120,13 +185,30 @@ const Checkout = () => {
     }
   };
 
-  // --- AQUI QUE A MÁGICA DO BANCO DE DADOS ACONTECE ---
+  // --- FINALIZAÇÃO BLINDADA (SEM DUPLICATAS) ---
   const finishOrder = async (status: string, paymentId: any) => {
-      setStep('success');
-      
+      // Se já saiu da tela de espera, aborta para evitar duplo clique
+      if (step === 'success') return; 
+
       try {
         const { data: { user } } = await supabase.auth.getUser();
 
+        // 1. CHECAGEM DE SEGURANÇA: O pedido já existe?
+        const { data: existingOrder } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('payment_id', String(paymentId))
+            .maybeSingle();
+
+        // Se já existe pedido salvo com esse ID, apenas mostramos o sucesso e paramos.
+        // Isso evita que o robô salve duas vezes.
+        if (existingOrder) {
+            setStep('success');
+            clearCart();
+            return;
+        }
+
+        // 2. Se não existe, Salva no Supabase
         const { error: dbError } = await supabase
           .from('orders')
           .insert({
@@ -140,21 +222,26 @@ const Checkout = () => {
 
         if (dbError) {
             console.error("Erro ao salvar no banco:", dbError);
-        } else {
-            console.log("Pedido salvo no banco com sucesso!");
+            // Se der erro de chave duplicada (duplicate key), a gente trata como sucesso também
+            if (dbError.code === '23505') { 
+                setStep('success');
+                clearCart();
+                return;
+            }
         }
 
-        const itemsListString = items.map(item => `${item.quantity}x ${item.title}`).join(", ");
+        // 3. Gera o HTML Premium e Envia Email
         const totalFormatted = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
+        const emailHtml = generateEmailHTML(formData.username, items, totalFormatted, String(paymentId));
         
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
             to_name: formData.username,
             to_email: formData.email,
-            status: `APROVADO ✅ (ID: ${paymentId})`,
-            total_value: totalFormatted,
-            items_list: itemsListString,
+            message_html: emailHtml,
         }, PUBLIC_KEY);
         
+        // 4. Finaliza
+        setStep('success');
         clearCart();
         toast.success("Pedido confirmado e salvo!");
 
@@ -180,7 +267,7 @@ const Checkout = () => {
             <Check className="w-12 h-12 text-green-500" />
           </div>
           <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mb-2">Pagamento Aprovado!</h2>
-          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. O histórico foi salvo na sua conta.</p>
+          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. O recibo detalhado foi enviado para seu e-mail.</p>
           <button onClick={() => { navigate('/'); setStep('cart'); clearCart(); }} className="rpg-button w-full py-4 text-lg">Voltar à Loja</button>
         </div>
       </div>
@@ -240,10 +327,9 @@ const Checkout = () => {
 
         {renderSteps()}
 
-        {/* Layout Grid (Empilha no mobile, divide no PC) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
           
-          {/* LADO ESQUERDO (Formulários) */}
+          {/* LADO ESQUERDO */}
           <div className="space-y-6">
             
             {/* ETAPA 1: CARRINHO */}
@@ -253,20 +339,16 @@ const Checkout = () => {
                   <Wallet className="text-primary" /> Seus Itens
                 </h2>
                 {items.map((item) => (
-                  // RESPONSIVIDADE AQUI: Flex-col no mobile, flex-row no PC
                   <div key={item.id} className="rpg-card group hover:border-primary/50 transition-colors p-4 flex flex-col sm:flex-row items-center gap-4 bg-black/40 backdrop-blur-sm">
-                    {/* Imagem centralizada no mobile */}
                     <div className="w-20 h-20 shrink-0 rounded bg-gradient-to-br from-black to-gray-900 border border-white/10 flex items-center justify-center p-2">
                       <img src={item.image} alt={item.title} className="w-full h-full object-contain drop-shadow-lg" />
                     </div>
                     
-                    {/* Texto centralizado no mobile */}
                     <div className="flex-1 w-full text-center sm:text-left">
                       <h4 className="font-bold text-lg">{item.title}</h4>
                       <p className="text-primary font-bold">R$ {item.price.toFixed(2).replace('.', ',')}</p>
                     </div>
 
-                    {/* Controles: Espalhados no mobile */}
                     <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
                         <div className="flex items-center gap-3 bg-black/50 rounded-lg p-1 border border-white/5">
                             <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-white/10 rounded"><Minus className="w-4 h-4" /></button>
@@ -450,7 +532,6 @@ const Checkout = () => {
           </div>
 
           {/* LADO DIREITO (RESUMO) */}
-          {/* Mantém a altura automática para não quebrar no mobile */}
           <div className="h-fit space-y-4">
             <div className="rpg-card lg:sticky lg:top-8 bg-black/60 backdrop-blur-xl border-gold/20 p-6 shadow-2xl">
               <h3 className="text-xl font-display font-bold mb-6 pb-4 border-b border-white/10 flex items-center gap-2">
