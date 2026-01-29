@@ -3,25 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { 
   ArrowLeft, Trash2, Minus, Plus, Check, Mail, Gamepad2, 
-  Copy, ExternalLink, QrCode, ShieldCheck, User, CreditCard, Wallet 
+  Copy, ExternalLink, QrCode, ShieldCheck, User, CreditCard, Wallet, Tag, Sparkles
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import emailjs from '@emailjs/browser';
 import { createClient } from '@supabase/supabase-js';
 
-// Configuração do Supabase
 const supabase = createClient(
   'https://vrlswaqvswzcapbzshcp.supabase.co', 
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
 );
 
-// SEUS DADOS DO EMAILJS
 const SERVICE_ID = "service_eem5brc"; 
 const TEMPLATE_ID = "template_pk19neg";
 const PUBLIC_KEY = "z5D7x94VJzfiiK8tk";
 
-// --- FUNÇÃO GERADORA DE EMAIL HTML V2.0 (Design Premium) ---
 const generateEmailHTML = (userName: string, items: any[], total: string, paymentId: string) => {
   const date = new Date().toLocaleDateString('pt-BR');
   const logoUrl = "https://media.discordapp.net/attachments/1057787918468526131/1465732500067455121/4dd4da52fa571380fa2d4f269867c2f5_logo.png?ex=697a2d44&is=6978dbc4&hm=b73af4519f72ba7c6d1a6cc4a04f67b9f4588932803e79e908af9fe3cf373786&=&format=webp&quality=lossless";
@@ -43,43 +41,33 @@ const generateEmailHTML = (userName: string, items: any[], total: string, paymen
 
   return `
     <div style="background-color: #000000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px 10px;">
-      
       <div style="max-width: 480px; margin: 0 auto; background-color: #09090b; border-radius: 16px; border: 1px solid #27272a; overflow: hidden; box-shadow: 0 10px 40px -10px rgba(74, 222, 128, 0.2);">
-        
         <div style="background-color: #18181b; padding: 30px 20px; text-align: center; border-bottom: 2px solid #4ade80;">
           <img src="${logoUrl}" width="70" style="margin-bottom: 15px; border-radius: 12px;">
           <h1 style="color: #4ade80; margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
           <p style="color: #a1a1aa; margin-top: 8px; font-size: 14px;">Olá, <span style="color: #fff;">${userName}</span>! Obrigado pela compra.</p>
         </div>
-
         <div style="padding: 30px 25px;">
-          
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             ${itemsHtml}
           </table>
-
           <div style="text-align: right; margin-bottom: 30px;">
             <p style="color: #71717a; font-size: 12px; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1px;">Valor Total</p>
             <p style="color: #4ade80; font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -1px;">${total}</p>
           </div>
-
           <div style="background-color: #18181b; border-radius: 8px; padding: 15px; text-align: center; color: #52525b; font-size: 11px; margin-bottom: 25px;">
             <p style="margin: 0 0 5px 0;">ID da Transação: <span style="color: #a1a1aa; font-family: monospace;">#${paymentId}</span></p>
             <p style="margin: 0;">Data: <span style="color: #a1a1aa;">${date}</span></p>
           </div>
-
           <div style="text-align: center;">
-            <a href="https://discord.gg/Hcu7y4Cz" style="background-color: #5865F2; color: #fff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; transition: background 0.2s;">
+            <a href="https://discord.gg/Hcu7y4Cz" style="background-color: #5865F2; color: #fff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
               Entrar na Comunidade VIP
             </a>
           </div>
-
         </div>
-        
         <div style="background-color: #09090b; padding: 15px; text-align: center; border-top: 1px solid #27272a;">
           <p style="color: #3f3f46; font-size: 11px; margin: 0;">© 2026 Hywer Store. Todos os direitos reservados.</p>
         </div>
-
       </div>
     </div>
   `;
@@ -91,14 +79,17 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'cart' | 'info' | 'payment' | 'pix_waiting' | 'success'>('cart');
   
-  // Dados do PIX
-  const [pixData, setPixData] = useState<{ qr_code: string, qr_code_base64: string, payment_id: number } | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string, discount: number } | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // Formulário
+  const discountAmount = appliedCoupon ? (totalPrice * (appliedCoupon.discount / 100)) : 0;
+  const finalTotal = totalPrice - discountAmount;
+
+  const [pixData, setPixData] = useState<{ qr_code: string, qr_code_base64: string, payment_id: number } | null>(null);
   const [formData, setFormData] = useState({ username: '', email: '', confirmEmail: '' });
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card' | null>(null);
 
-  // PREENCHIMENTO AUTOMÁTICO SE ESTIVER LOGADO
   useEffect(() => {
     const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,20 +105,16 @@ const Checkout = () => {
     loadUserData();
   }, []);
 
-  // --- ROBÔ DE VERIFICAÇÃO DO PIX ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
-
     if (step === 'pix_waiting' && pixData?.payment_id) {
       interval = setInterval(async () => {
         try {
           const check = await supabase.functions.invoke(`checkout?action=check_status`, {
             body: { payment_id: pixData.payment_id }
           });
-
           if (check.data?.status === 'approved') {
              clearInterval(interval);
-             // AQUI MUDOU: O status vem do Mercado Pago, e passamos para o finishOrder
              finishOrder(check.data.status, pixData.payment_id);
           }
         } catch (e) {
@@ -135,11 +122,55 @@ const Checkout = () => {
         }
       }, 4000); 
     }
-
     return () => clearInterval(interval);
   }, [step, pixData]);
 
-  // --- HANDLERS ---
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsValidatingCoupon(true);
+    try {
+      // 1. Verificar se o cupom existe e está ativo
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('active', true)
+        .single();
+
+      if (error || !coupon) {
+        toast.error("Pergaminho inválido ou sem poder.");
+        setAppliedCoupon(null);
+        return;
+      }
+
+      // 2. Verificar se o usuário já usou este cupom (Check no Front para UX rápida)
+      const { data: alreadyUsed } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('buyer_email', formData.email)
+        .eq('coupon_used', couponCode.toUpperCase().trim())
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      if (alreadyUsed) {
+        toast.error("Você já utilizou este poder anteriormente!");
+        return;
+      }
+
+      if (coupon.usage_limit && coupon.times_used >= coupon.usage_limit) {
+        toast.error("Este poder já se esgotou no reino.");
+        return;
+      }
+
+      setAppliedCoupon({ code: coupon.code, discount: coupon.discount_percent });
+      toast.success(`Poder ${coupon.code} ativado!`);
+      
+    } catch (err) {
+      toast.error("Erro na conjuração do cupom.");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -155,20 +186,17 @@ const Checkout = () => {
   const startPayment = async () => {
     if (!paymentMethod) { toast.error('Selecione um método de pagamento'); return; }
     setIsProcessing(true);
-
     try {
       const { data, error } = await supabase.functions.invoke('checkout', {
         body: {
-          items: items,
+          items,
           buyer_name: formData.username, 
           buyer_email: formData.email,
-          payment_method: paymentMethod
+          payment_method: paymentMethod,
+          coupon_code: appliedCoupon?.code || null
         }
       });
-
-      if (error) throw error;
       if (data.error) throw new Error(data.error);
-
       if (data.type === 'pix_generated') {
         setPixData(data);
         setStep('pix_waiting');
@@ -176,75 +204,59 @@ const Checkout = () => {
       else if (data.type === 'redirect') {
         window.location.href = data.url;
       }
-
     } catch (error: any) {
-      console.error('Erro no processamento:', error);
       toast.error(error.message || 'Erro ao processar pagamento.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // --- FINALIZAÇÃO BLINDADA (SEM DUPLICATAS) ---
   const finishOrder = async (status: string, paymentId: any) => {
-      // Se já saiu da tela de espera, aborta para evitar duplo clique
       if (step === 'success') return; 
-
       try {
         const { data: { user } } = await supabase.auth.getUser();
-
-        // 1. CHECAGEM DE SEGURANÇA: O pedido já existe?
         const { data: existingOrder } = await supabase
             .from('orders')
             .select('id')
             .eq('payment_id', String(paymentId))
             .maybeSingle();
 
-        // Se já existe pedido salvo com esse ID, apenas mostramos o sucesso e paramos.
-        // Isso evita que o robô salve duas vezes.
         if (existingOrder) {
             setStep('success');
             clearCart();
             return;
         }
 
-        // 2. Se não existe, Salva no Supabase
         const { error: dbError } = await supabase
           .from('orders')
           .insert({
             user_id: user?.id || null, 
             payment_id: String(paymentId),
             status: status,
-            total_amount: totalPrice,
+            total_amount: finalTotal,
             items: items, 
-            discord_username: formData.username
+            discord_username: formData.username,
+            buyer_email: formData.email, // Importante para a trava de cupom
+            coupon_used: appliedCoupon?.code || null
           });
 
-        if (dbError) {
-            console.error("Erro ao salvar no banco:", dbError);
-            // Se der erro de chave duplicada (duplicate key), a gente trata como sucesso também
-            if (dbError.code === '23505') { 
-                setStep('success');
-                clearCart();
-                return;
-            }
+        if (dbError && dbError.code === '23505') { 
+            setStep('success');
+            clearCart();
+            return;
         }
 
-        // 3. Gera o HTML Premium e Envia Email
-        const totalFormatted = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
+        const totalFormatted = `R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
         const emailHtml = generateEmailHTML(formData.username, items, totalFormatted, String(paymentId));
-        
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
             to_name: formData.username,
             to_email: formData.email,
             message_html: emailHtml,
         }, PUBLIC_KEY);
         
-        // 4. Finaliza
         setStep('success');
         clearCart();
-        toast.success("Pedido confirmado e salvo!");
-
+        toast.success("Pedido confirmado!");
       } catch (err) {
         console.warn("Erro no processo final:", err);
       }
@@ -257,8 +269,6 @@ const Checkout = () => {
     }
   };
 
-  // --- RENDERIZAÇÃO ---
-
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4 bg-[url(@/assets/bg-pattern.png)] bg-cover">
@@ -267,18 +277,17 @@ const Checkout = () => {
             <Check className="w-12 h-12 text-green-500" />
           </div>
           <h2 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 mb-2">Pagamento Aprovado!</h2>
-          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. O recibo detalhado foi enviado para seu e-mail.</p>
+          <p className="text-muted-foreground mb-8">Recebemos sua confirmação. O recibo foi enviado por e-mail.</p>
           <button onClick={() => { navigate('/'); setStep('cart'); clearCart(); }} className="rpg-button w-full py-4 text-lg">Voltar à Loja</button>
         </div>
       </div>
     );
   }
 
-  // Carrinho Vazio
   if (items.length === 0 && step !== 'pix_waiting') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
-        <div className="text-center opacity-50">
+        <div className="text-center opacity-50 text-white/50">
           <Wallet className="w-20 h-20 mx-auto mb-4" />
           <h2 className="text-2xl font-bold">Seu inventário está vazio</h2>
         </div>
@@ -289,7 +298,6 @@ const Checkout = () => {
     );
   }
 
-  // Steps Visualizer
   const renderSteps = () => (
     <div className="flex justify-between items-center mb-8 px-2 relative">
       <div className="absolute top-1/2 left-0 w-full h-1 bg-white/10 -z-10 rounded-full" />
@@ -302,10 +310,10 @@ const Checkout = () => {
         const isPast = ['cart', 'info', 'payment'].indexOf(step) > idx;
         return (
           <div key={s.id} className={`flex flex-col items-center gap-2 transition-all ${isActive || isPast ? 'opacity-100' : 'opacity-40'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive || isPast ? 'bg-primary border-primary text-black' : 'bg-black border-white/20 text-white'} transition-colors`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive || isPast ? 'bg-primary border-primary text-black' : 'bg-black border-white/20 text-white'}`}>
               <s.icon className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:block">{s.label}</span>
+            <span className="text-xs font-bold uppercase tracking-wider hidden sm:block text-white/80">{s.label}</span>
           </div>
         )
       })}
@@ -315,11 +323,9 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-background py-8 px-4 font-sans text-foreground">
       <div className="container mx-auto max-w-5xl">
-        
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => step === 'cart' ? navigate('/') : setStep(prev => prev === 'payment' ? 'info' : 'cart')} 
-                  className="hover:text-primary transition-colors flex items-center gap-2">
+                  className="hover:text-primary transition-colors flex items-center gap-2 text-white/80">
             <ArrowLeft className="w-5 h-5" /> <span className="hidden sm:inline">Voltar</span>
           </button>
           <img src={logo} alt="Hywer" className="h-8 w-auto opacity-80" />
@@ -328,34 +334,28 @@ const Checkout = () => {
         {renderSteps()}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
-          
-          {/* LADO ESQUERDO */}
           <div className="space-y-6">
-            
-            {/* ETAPA 1: CARRINHO */}
             {step === 'cart' && (
               <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-4">
-                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2 text-white">
                   <Wallet className="text-primary" /> Seus Itens
                 </h2>
                 {items.map((item) => (
                   <div key={item.id} className="rpg-card group hover:border-primary/50 transition-colors p-4 flex flex-col sm:flex-row items-center gap-4 bg-black/40 backdrop-blur-sm">
                     <div className="w-20 h-20 shrink-0 rounded bg-gradient-to-br from-black to-gray-900 border border-white/10 flex items-center justify-center p-2">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-contain drop-shadow-lg" />
+                      <img src={item.image} alt={item.title} className="w-full h-full object-contain" />
                     </div>
-                    
                     <div className="flex-1 w-full text-center sm:text-left">
-                      <h4 className="font-bold text-lg">{item.title}</h4>
+                      <h4 className="font-bold text-lg text-white">{item.title}</h4>
                       <p className="text-primary font-bold">R$ {item.price.toFixed(2).replace('.', ',')}</p>
                     </div>
-
                     <div className="flex items-center justify-center gap-4 w-full sm:w-auto">
                         <div className="flex items-center gap-3 bg-black/50 rounded-lg p-1 border border-white/5">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-white/10 rounded"><Minus className="w-4 h-4" /></button>
-                            <span className="w-6 text-center font-bold">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 hover:bg-white/10 rounded"><Plus className="w-4 h-4" /></button>
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-white/10 rounded text-white"><Minus className="w-4 h-4" /></button>
+                            <span className="w-6 text-center font-bold text-white">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 hover:bg-white/10 rounded text-white"><Plus className="w-4 h-4" /></button>
                         </div>
-                        <button onClick={() => removeItem(item.id)} className="p-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><Trash2 className="w-5 h-5" /></button>
+                        <button onClick={() => removeItem(item.id)} className="p-3 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-lg"><Trash2 className="w-5 h-5" /></button>
                     </div>
                   </div>
                 ))}
@@ -365,10 +365,9 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* ETAPA 2: DADOS */}
             {step === 'info' && (
               <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2 text-white">
                   <User className="text-primary" /> Identificação
                 </h2>
                 <div className="rpg-card bg-black/40 backdrop-blur-sm p-6 space-y-5">
@@ -376,124 +375,52 @@ const Checkout = () => {
                     <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Nick no Servidor</label>
                     <div className="relative">
                       <Gamepad2 className="absolute left-4 top-1/2 -translate-y-1/2 text-primary w-5 h-5" />
-                      <input 
-                        type="text" 
-                        name="username" 
-                        value={formData.username} 
-                        onChange={handleInputChange} 
-                        placeholder="Ex: RobsonGamer" 
-                        className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary outline-none transition-all"
-                      />
+                      <input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder="Ex: RobsonGamer" className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary outline-none text-white" />
                     </div>
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Email</label>
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary w-5 h-5" />
-                        <input 
-                          type="email" 
-                          name="email" 
-                          value={formData.email} 
-                          onChange={handleInputChange} 
-                          placeholder="seu@email.com" 
-                          className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary outline-none transition-all"
-                        />
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="seu@email.com" className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary outline-none text-white" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Confirmar Email</label>
                       <div className="relative">
                         <Check className="absolute left-4 top-1/2 -translate-y-1/2 text-primary w-5 h-5" />
-                        <input 
-                          type="email" 
-                          name="confirmEmail" 
-                          value={formData.confirmEmail} 
-                          onChange={handleInputChange} 
-                          placeholder="Confirme o email" 
-                          className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary outline-none transition-all"
-                        />
+                        <input type="email" name="confirmEmail" value={formData.confirmEmail} onChange={handleInputChange} placeholder="Confirme o email" className="w-full pl-12 pr-4 py-4 rounded-xl bg-black/50 border border-white/10 focus:border-primary outline-none text-white" />
                       </div>
                     </div>
                   </div>
-                  
                   <button onClick={() => validateInfo() && setStep('payment')} className="rpg-button w-full py-4 text-lg mt-4">Confirmar Dados</button>
                 </div>
               </div>
             )}
 
-            {/* ETAPA 3: PAGAMENTO (ESCOLHA) */}
             {step === 'payment' && (
               <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2 text-white">
                   <CreditCard className="text-primary" /> Método de Pagamento
                 </h2>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {/* Botão PIX */}
-                  <button 
-                    onClick={() => setPaymentMethod('pix')} 
-                    className={`relative p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 group overflow-hidden ${
-                      paymentMethod === 'pix' 
-                      ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
-                      : 'border-white/10 bg-black/40 hover:border-emerald-500/50 hover:bg-black/60'
-                    }`}
-                  >
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${paymentMethod === 'pix' ? 'bg-emerald-500 text-black' : 'bg-white/5 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black'}`}>
-                      <QrCode className="w-7 h-7" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-bold text-lg">PIX</h3>
-                      <p className="text-sm text-muted-foreground">Aprovação Imediata</p>
-                    </div>
-                    {paymentMethod === 'pix' && <div className="absolute top-3 right-3 text-emerald-500"><Check className="w-5 h-5"/></div>}
+                  <button onClick={() => setPaymentMethod('pix')} className={`relative p-6 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all ${paymentMethod === 'pix' ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/10 bg-black/40'}`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center ${paymentMethod === 'pix' ? 'bg-emerald-500 text-black' : 'bg-white/5 text-emerald-500'}`}><QrCode className="w-7 h-7" /></div>
+                    <div className="text-center text-white"><h3 className="font-bold text-lg">PIX</h3><p className="text-sm text-muted-foreground">Aprovação Imediata</p></div>
                   </button>
-
-                  {/* Botão CARTÃO */}
-                  <button 
-                    onClick={() => setPaymentMethod('card')} 
-                    className={`relative p-6 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 group overflow-hidden ${
-                      paymentMethod === 'card' 
-                      ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.2)]' 
-                      : 'border-white/10 bg-black/40 hover:border-blue-500/50 hover:bg-black/60'
-                    }`}
-                  >
-                     <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${paymentMethod === 'card' ? 'bg-blue-500 text-white' : 'bg-white/5 text-blue-500 group-hover:bg-blue-500 group-hover:text-white'}`}>
-                      <CreditCard className="w-7 h-7" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-bold text-lg">Cartão</h3>
-                      <p className="text-sm text-muted-foreground">Crédito e Débito</p>
-                    </div>
-                    {paymentMethod === 'card' && <div className="absolute top-3 right-3 text-blue-500"><Check className="w-5 h-5"/></div>}
+                  <button onClick={() => setPaymentMethod('card')} className={`relative p-6 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all ${paymentMethod === 'card' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-black/40'}`}>
+                     <div className={`w-14 h-14 rounded-full flex items-center justify-center ${paymentMethod === 'card' ? 'bg-blue-500 text-white' : 'bg-white/5 text-blue-500'}`}><CreditCard className="w-7 h-7" /></div>
+                    <div className="text-center text-white"><h3 className="font-bold text-lg">Cartão</h3><p className="text-sm text-muted-foreground">Crédito e Débito</p></div>
                   </button>
                 </div>
-
                 <div className="rpg-card bg-black/40 border-primary/20 p-6 text-center">
                    {!paymentMethod ? (
-                     <p className="text-muted-foreground py-2">Selecione uma opção acima para continuar.</p>
+                     <p className="text-muted-foreground py-2 text-white/60">Selecione uma opção acima para continuar.</p>
                    ) : (
                      <div className="animate-in fade-in slide-in-from-bottom-2">
-                        <p className="mb-4 text-sm text-muted-foreground max-w-md mx-auto">
-                          Você será redirecionado para o ambiente seguro do <b>Mercado Pago</b>.
-                          {paymentMethod === 'pix' ? ' O QR Code será gerado na próxima tela.' : ''}
-                        </p>
-                        <button 
-                          onClick={startPayment}
-                          disabled={isProcessing}
-                          className="rpg-button w-full py-4 text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/20"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"/>
-                              Processando...
-                            </>
-                          ) : (
-                            <>
-                              {paymentMethod === 'pix' ? 'Gerar QR Code' : 'Pagar com Cartão'} <ExternalLink className="w-5 h-5" />
-                            </>
-                          )}
+                        <button onClick={startPayment} disabled={isProcessing} className="rpg-button w-full py-4 text-lg flex items-center justify-center gap-2">
+                          {isProcessing ? "Processando..." : "Finalizar Compra"} <ExternalLink className="w-5 h-5" />
                         </button>
                      </div>
                    )}
@@ -501,71 +428,119 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* ETAPA 4: PIX ESPERANDO (Tela Exclusiva) */}
             {step === 'pix_waiting' && pixData && (
                <div className="animate-in zoom-in duration-300">
-                  <div className="rpg-card border-emerald-500/50 bg-black/80 p-8 text-center max-w-md mx-auto shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-                     <h2 className="text-2xl font-display font-bold text-white mb-2">Escaneie o QR Code</h2>
-                     <p className="text-emerald-400 text-sm mb-6 font-medium">Abra o app do seu banco e pague via Pix.</p>
-                     
-                     <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-6 shadow-inner">
-                        <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code Pix" className="w-56 h-56 object-contain max-w-full" />
+                  <div className="rpg-card border-emerald-500/50 bg-black/80 p-8 text-center max-w-md mx-auto">
+                     <h2 className="text-2xl font-display font-bold text-white mb-6">Escaneie o QR Code</h2>
+                     <div className="bg-white p-4 rounded-xl mx-auto w-fit mb-6 shadow-xl">
+                        <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="QR Code Pix" className="w-56 h-56" />
                      </div>
-
-                     <div className="space-y-4">
-                         <div className="relative">
-                            <input readOnly value={pixData.qr_code} className="w-full bg-black/50 border border-white/10 rounded-lg py-2 px-3 text-xs text-muted-foreground truncate" />
-                            <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black to-transparent pointer-events-none" />
-                         </div>
-                         <button onClick={copyPixCode} className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02]">
-                            <Copy className="w-5 h-5" /> Copiar Código Pix
-                         </button>
-                     </div>
-
-                     <div className="mt-8 flex items-center justify-center gap-2 text-sm text-yellow-500/80 animate-pulse bg-yellow-500/5 py-2 rounded-full">
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full"/>
-                        Aguardando confirmação automática...
+                     <button onClick={copyPixCode} className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform">
+                        <Copy className="w-5 h-5" /> Copiar Código Pix
+                     </button>
+                     <div className="mt-8 text-sm text-yellow-500/80 animate-pulse flex items-center justify-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"/> Aguardando confirmação...
                      </div>
                   </div>
                </div>
             )}
           </div>
 
-          {/* LADO DIREITO (RESUMO) */}
+          {/* LADO DIREITO (RESUMO COM ANIMAÇÕES) */}
           <div className="h-fit space-y-4">
-            <div className="rpg-card lg:sticky lg:top-8 bg-black/60 backdrop-blur-xl border-gold/20 p-6 shadow-2xl">
-              <h3 className="text-xl font-display font-bold mb-6 pb-4 border-b border-white/10 flex items-center gap-2">
+            <motion.div layout className="rpg-card lg:sticky lg:top-8 bg-black/60 backdrop-blur-xl border-white/5 p-6 shadow-2xl relative overflow-hidden">
+              <AnimatePresence>
+                {appliedCoupon && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-primary/5 pointer-events-none" />
+                )}
+              </AnimatePresence>
+
+              <h3 className="text-xl font-display font-bold mb-6 pb-4 border-b border-white/10 flex items-center gap-2 text-white">
                 <ShieldCheck className="text-primary w-5 h-5"/> Resumo do Pedido
               </h3>
               
-              <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-4 mb-6 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                 {items.map(item => (
-                  <div key={item.id} className="flex justify-between items-start text-sm group">
-                    <span className="text-muted-foreground group-hover:text-white transition-colors">
-                      <span className="text-primary font-bold">{item.quantity}x</span> {item.title}
-                    </span>
+                  <div key={item.id} className="flex justify-between items-start text-sm">
+                    <span className="text-muted-foreground"><span className="text-primary font-bold">{item.quantity}x</span> {item.title}</span>
                     <span className="font-mono text-white/80">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
                   </div>
                 ))}
               </div>
 
+              {/* --- UI DO CUPOM COM ANIMAÇÃO --- */}
+              <div className="mb-6 pt-4 border-t border-white/5 space-y-3 relative">
+                 <label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-1">
+                   <Tag className="w-3 h-3" /> Pergaminho de Desconto
+                 </label>
+                 <div className="flex gap-2">
+                   <input 
+                     type="text" 
+                     value={couponCode} 
+                     onChange={(e) => setCouponCode(e.target.value)}
+                     placeholder="CÓDIGO MÁGICO" 
+                     className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs uppercase outline-none focus:border-primary transition-all text-white placeholder:text-white/20"
+                   />
+                   <motion.button 
+                     whileHover={{ scale: 1.05 }}
+                     whileTap={{ scale: 0.95 }}
+                     onClick={handleApplyCoupon} 
+                     disabled={isValidatingCoupon}
+                     className="bg-primary/20 hover:bg-primary/30 text-primary text-[10px] font-bold px-3 py-2 rounded-lg transition-all border border-primary/20"
+                   >
+                     {isValidatingCoupon ? '...' : 'CONJURAR'}
+                   </motion.button>
+                 </div>
+
+                 <AnimatePresence>
+                   {appliedCoupon && (
+                     <motion.div initial={{ height: 0, opacity: 0, scale: 0.9 }} animate={{ height: 'auto', opacity: 1, scale: 1 }} exit={{ height: 0, opacity: 0, scale: 0.9 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="overflow-hidden">
+                       <div className="flex items-center justify-between text-[10px] bg-primary/10 text-primary p-3 rounded-lg border border-primary/30 mt-2 relative shadow-[0_0_15px_rgba(74,222,128,0.1)]">
+                         <div className="flex items-center gap-2">
+                            <motion.div animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}>
+                              <Sparkles className="w-3 h-3 text-primary" />
+                            </motion.div>
+                            <span className="font-bold uppercase tracking-tighter">PODER ATIVO: {appliedCoupon.code}</span>
+                         </div>
+                         <button onClick={() => setAppliedCoupon(null)} className="text-red-400 hover:text-red-300 font-bold uppercase text-[9px]">Anular</button>
+                       </div>
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+              </div>
+
               <div className="space-y-3 pt-4 border-t border-white/10">
                 <div className="flex justify-between text-muted-foreground text-sm">
                   <span>Subtotal</span>
-                  <span>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-white/80">R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
                 </div>
+                
+                <AnimatePresence>
+                  {appliedCoupon && (
+                    <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} className="flex justify-between text-green-500 text-sm font-medium">
+                      <span>Bônus do Reino (-{appliedCoupon.discount}%)</span>
+                      <span>- R$ {discountAmount.toFixed(2).replace('.', ',')}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="flex justify-between items-center font-bold text-xl text-primary pt-2">
                   <span>Total</span>
-                  <span>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                  <motion.span
+                    key={finalTotal}
+                    initial={{ scale: 1.5, filter: "brightness(2)" }}
+                    animate={{ scale: 1, filter: "brightness(1)" }}
+                    transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                  >
+                    R$ {finalTotal.toFixed(2).replace('.', ',')}
+                  </motion.span>
                 </div>
               </div>
-
-              <div className="mt-6 text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Pagamento 100% Seguro
+              <div className="mt-6 text-[10px] text-center text-white/30 flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> Transação Protegida pelo Reino
               </div>
-            </div>
+            </motion.div>
           </div>
-
         </div>
       </div>
     </div>

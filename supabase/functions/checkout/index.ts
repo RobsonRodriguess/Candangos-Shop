@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,12 +13,16 @@ serve(async (req) => {
 
   try {
     const accessToken = Deno.env.get('MP_ACCESS_TOKEN')
-    if (!accessToken) throw new Error("Token MP não configurado (Secrets).")
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+    if (!accessToken) throw new Error("Token MP não configurado.")
+    if (!supabaseUrl || !supabaseServiceRole) throw new Error("Supabase Keys não configuradas.")
+
+    const supabase = createClient(supabaseUrl, supabaseServiceRole)
     const url = new URL(req.url)
     const action = url.searchParams.get('action') 
 
-    // --- STATUS CHECK ---
     if (action === 'check_status') {
       const { payment_id } = await req.json()
       const resp = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
@@ -27,33 +32,57 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: data.status }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // --- CRIA PAGAMENTO ---
     const bodyText = await req.text()
     if (!bodyText) throw new Error("Corpo da requisição vazio")
-    const { items, buyer_email, buyer_name, payment_method } = JSON.parse(bodyText)
+    const { items, buyer_email, buyer_name, payment_method, coupon_code } = JSON.parse(bodyText)
 
-    // Previne erros bobos
     if (!items || items.length === 0) throw new Error("Carrinho vazio no Backend")
     if (!buyer_email || !buyer_email.includes('@')) throw new Error("Email inválido no Backend")
 
-    const totalAmount = items.reduce((acc: any, item: any) => acc + (Number(item.price) * Number(item.quantity)), 0)
+    let subtotal = items.reduce((acc: number, item: any) => acc + (Number(item.price) * Number(item.quantity)), 0)
+    let totalAmount = subtotal
+
+    // --- LÓGICA DE CUPOM COM TRAVA DE USO ÚNICO ---
+    if (coupon_code) {
+      const { data: coupon } = await supabase
+        .from('coupons')
+        .select('discount_percent, active, usage_limit, times_used')
+        .eq('code', coupon_code.toUpperCase())
+        .single()
+
+      if (coupon && coupon.active) {
+        // 1. Verificar se este e-mail já usou este cupom em um pedido aprovado
+        const { data: alreadyUsed } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('buyer_email', buyer_email)
+          .eq('coupon_used', coupon_code.toUpperCase())
+          .eq('status', 'approved')
+          .maybeSingle()
+
+        if (alreadyUsed) {
+          throw new Error("Você já utilizou o poder deste pergaminho em outra jornada!")
+        }
+
+        // 2. Verificar limite global de usos
+        const limitReached = coupon.usage_limit && coupon.times_used >= coupon.usage_limit
+        if (!limitReached) {
+          const discount = subtotal * (coupon.discount_percent / 100)
+          totalAmount = subtotal - discount
+        }
+      }
+    }
     
-    // Tratamento de Nome
     const nameParts = (buyer_name || 'Cliente').trim().split(' ')
     const firstName = nameParts[0]
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Gamer'
 
-    // PIX
     if (payment_method === 'pix') {
       const paymentData = {
         transaction_amount: Number(totalAmount.toFixed(2)),
-        description: `Hywer Store - ${buyer_email}`,
+        description: `Hywer Store - ${buyer_email}${coupon_code ? ` (Cupom: ${coupon_code})` : ''}`,
         payment_method_id: 'pix',
-        payer: {
-          email: buyer_email,
-          first_name: firstName,
-          last_name: lastName 
-        }
+        payer: { email: buyer_email, first_name: firstName, last_name: lastName }
       }
 
       const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
@@ -67,12 +96,7 @@ serve(async (req) => {
       })
 
       const mpResult = await mpResponse.json()
-      
-      // Se der erro no MP, lançamos o erro com o detalhe
-      if (mpResult.error || !mpResult.id) {
-         const errorDetail = mpResult.message || JSON.stringify(mpResult.cause) || 'Erro desconhecido'
-         throw new Error(`MP Recusou: ${errorDetail}`)
-      }
+      if (mpResult.error || !mpResult.id) throw new Error(`MP Recusou: ${mpResult.message}`)
 
       const qrData = mpResult.point_of_interaction.transaction_data
       return new Response(
@@ -84,9 +108,7 @@ serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    }
-    // CARTÃO
-    else {
+    } else {
       const preferenceData = {
         items: items.map((item: any) => ({
           title: item.title,
@@ -94,11 +116,27 @@ serve(async (req) => {
           unit_price: Number(item.price),
           currency_id: 'BRL',
         })),
+        ...(totalAmount < subtotal && {
+          items: [
+            ...items.map((item: any) => ({
+              title: item.title,
+              quantity: Number(item.quantity),
+              unit_price: Number(item.price),
+              currency_id: 'BRL',
+            })),
+            {
+              title: `Desconto Cupom: ${coupon_code}`,
+              quantity: 1,
+              unit_price: -(subtotal - totalAmount),
+              currency_id: 'BRL',
+            }
+          ]
+        }),
         payer: { email: buyer_email },
         back_urls: {
-            success: "https://www.google.com", 
-            failure: "https://www.google.com",
-            pending: "https://www.google.com"
+            success: "https://hywer-shop.vercel.app",
+            failure: "https://hywer-shop.vercel.app",
+            pending: "https://hywer-shop.vercel.app"
         },
         auto_return: "approved",
       }
@@ -117,8 +155,6 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    // --- O PULO DO GATO ---
-    // Retorna status 200 (OK) mesmo sendo erro, para o Frontend conseguir ler a mensagem "error"
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
