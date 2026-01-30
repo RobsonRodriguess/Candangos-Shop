@@ -8,9 +8,9 @@
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="./assets/home.png" alt="Tela Inicial" width="700"/>
+  <img src="./src/assets/home.png" alt="Tela Inicial" width="700"/>
   <br/><br/>
-  <img src="./assets/admin.png" alt="Painel Admin" width="700"/>
+  <img src="./src/assets/admin.png" alt="Painel Admin" width="700"/>
 </div>
 
 ## ⚔️ Sobre o Projeto
