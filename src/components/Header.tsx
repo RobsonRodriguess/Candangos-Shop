@@ -1,54 +1,183 @@
-const navigation = [
-  { name: 'Início', href: '#' },
-  { name: 'Loja', href: '#loja' },
-  { name: 'Discord', href: 'https://discord.gg/Hcu7y4Cz' },
-  { name: 'Notícias', href: '#noticias' },
-];
+import { useState, useEffect } from 'react';
+import { Copy, Check, Menu, X, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
+
+// 👇 Importando o seu botão de login real
+import { AuthButton } from './AuthButton'; 
 
 const Header = () => {
-  return (
-    <header className="w-full py-6 relative z-10">
-      {/* Background blur effect opcional */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent -z-10 pointer-events-none" />
+  // --- ESTADOS ---
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [playersOnline, setPlayersOnline] = useState<number | string>("...");
+  
+  const serverIP = "hytale.hywer.net";
+  const SERVER_ID = '1461132354096726171'; // Seu ID do Discord
 
-      <div className="container mx-auto flex flex-col items-center gap-6 px-4">
+  // --- CONFIGURAÇÃO DOS LINKS ---
+  const navItems = [
+    { name: 'Início', href: '#', type: 'anchor' },
+    { name: 'Loja', href: '#loja', type: 'anchor' },
+    { name: 'Discord', href: 'https://discord.gg/GqJnprnS', type: 'external' }, // Link real
+    { name: 'Notícias', href: '#noticias', type: 'anchor' }
+  ];
+
+  // --- EFEITOS (Scroll + Online Count) ---
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    const fetchOnlineCount = async () => {
+      try {
+        const response = await fetch(`https://discord.com/api/guilds/${SERVER_ID}/widget.json`);
+        const data = await response.json();
         
-        {/* LOGO PRINCIPAL */}
-        <div className="relative group cursor-pointer">
-          {/* Brilho atrás do logo */}
-          <div className="absolute inset-0 bg-cyan-500/20 blur-[50px] rounded-full group-hover:bg-cyan-500/30 transition-all duration-500" />
+        if (data && data.presence_count !== undefined) {
+          setPlayersOnline(data.presence_count);
+        } else {
+          setPlayersOnline(0);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar jogadores online:", error);
+        setPlayersOnline("OFF");
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    fetchOnlineCount();
+    const interval = setInterval(fetchOnlineCount, 60000);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // --- AÇÕES ---
+  const copyIp = () => {
+    navigator.clipboard.writeText(serverIP);
+    setCopied(true);
+    toast.success("IP copiado com sucesso!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <header 
+      className={`
+        fixed top-0 left-0 w-full z-50 transition-all duration-300 border-b
+        ${isScrolled 
+          ? 'bg-[#0a0a0a]/95 backdrop-blur-md border-white/10 py-3 shadow-2xl' 
+          : 'bg-transparent border-transparent py-4'
+        }
+      `}
+    >
+      <div className="container mx-auto px-4 flex items-center justify-between">
+
+        {/* --- ESQUERDA: STATUS DO SERVIDOR --- */}
+        <div className="flex items-center gap-4">
           
-          <img 
-            src="/logo1.png" 
-            alt="Hywer Logo" 
-            // AJUSTE: h-28 no celular, h-40 no PC (sm:h-40) para não ocupar a tela toda
-            className="relative h-28 sm:h-40 w-auto drop-shadow-2xl transition-transform duration-300 hover:scale-105 hover:rotate-1"
-          />
+          {/* Botão Copiar IP */}
+          <button 
+            onClick={copyIp}
+            className={`
+              group flex items-center gap-2 px-3 py-1.5 rounded-lg 
+              border transition-all duration-300 active:scale-95
+              ${isScrolled ? 'bg-white/5 border-white/10' : 'bg-black/40 border-white/10 backdrop-blur-sm'}
+              hover:border-green-500/50 hover:bg-green-500/10
+            `}
+          >
+            {copied ? (
+                <Check className="w-3.5 h-3.5 text-green-400" />
+            ) : (
+                <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400" />
+            )}
+            <span className="text-xs font-mono font-bold text-gray-300 group-hover:text-white tracking-wide hidden xs:inline-block">
+              {serverIP}
+            </span>
+            <span className="text-xs font-mono font-bold text-gray-300 group-hover:text-white tracking-wide xs:hidden">
+              IP
+            </span>
+          </button>
+
+          {/* Player Count (Desktop/Tablet) */}
+          <div className="hidden md:flex items-center gap-2 text-xs font-bold text-gray-400">
+            <span className="relative flex h-2 w-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${playersOnline === "OFF" ? "bg-red-400" : "bg-green-400"}`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${playersOnline === "OFF" ? "bg-red-500" : "bg-green-500"}`}></span>
+            </span>
+            <span className="text-green-100">{playersOnline}</span> Online
+          </div>
         </div>
 
-        {/* NAVEGAÇÃO BLINDADA 🛡️ */}
-        <nav className="
-            grid grid-cols-2 w-full max-w-[320px] gap-2 p-2 rounded-2xl
-            sm:flex sm:w-auto sm:max-w-none sm:gap-2 sm:p-1.5 sm:rounded-full
-            bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl
-        ">
-          {navigation.map((item) => (
-            <a
-              key={item.name}
-              href={item.href}
-              className="
-                text-center px-4 py-3 sm:px-6 sm:py-2 
-                rounded-xl sm:rounded-full 
-                text-sm font-bold uppercase tracking-wide 
-                text-gray-300 hover:text-white hover:bg-white/10 
-                transition-all border border-transparent hover:border-white/5
-              "
-            >
-              {item.name}
-            </a>
-          ))}
+        {/* --- CENTRO: NAVEGAÇÃO DESKTOP --- */}
+        <nav className={`
+            hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2
+            transition-all duration-500
+            ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
+        `}>
+            {navItems.map((item) => (
+                <a 
+                  key={item.name} 
+                  href={item.href}
+                  target={item.type === 'external' ? "_blank" : "_self"}
+                  rel={item.type === 'external' ? "noopener noreferrer" : ""}
+                  className="text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-green-400 transition-colors flex items-center gap-1"
+                >
+                    {item.name}
+                    {item.type === 'external' && <ExternalLink className="w-3 h-3 opacity-50" />}
+                </a>
+            ))}
         </nav>
 
+        {/* --- DIREITA: AUTH & MENU MOBILE --- */}
+        <div className="flex items-center gap-3">
+            
+            {/* AuthButton */}
+            <div className={`${isScrolled ? '' : 'bg-black/40 backdrop-blur-sm rounded-full'}`}>
+               <AuthButton />
+            </div>
+
+            {/* Botão Menu Mobile */}
+            <button 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 text-white ml-1 hover:bg-white/10 rounded-lg transition-colors"
+            >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+        </div>
+      </div>
+
+      {/* --- MENU MOBILE EXPANSÍVEL --- */}
+      <div className={`
+        lg:hidden fixed top-[60px] left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out
+        ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}
+      `}>
+          <div className="flex flex-col p-4 gap-2">
+            {navItems.map((item) => (
+                <a 
+                  key={item.name} 
+                  href={item.href}
+                  target={item.type === 'external' ? "_blank" : "_self"}
+                  rel={item.type === 'external' ? "noopener noreferrer" : ""}
+                  className="px-4 py-3 rounded-lg bg-white/5 text-gray-300 font-bold uppercase text-sm hover:bg-white/10 hover:text-green-400 transition-all flex items-center justify-between"
+                  onClick={() => setMobileMenuOpen(false)} // Fecha o menu ao clicar
+                >
+                    {item.name}
+                    {item.type === 'external' && <ExternalLink className="w-4 h-4 opacity-50" />}
+                </a>
+            ))}
+            
+            {/* Players Count no Menu Mobile */}
+            <div className="mt-2 px-4 py-3 bg-black/40 rounded-lg border border-white/5 flex items-center justify-between text-xs text-gray-400 font-bold uppercase">
+               <span>Status do Servidor</span>
+               <div className="flex items-center gap-2">
+                 <span className={`w-2 h-2 rounded-full ${playersOnline === "OFF" ? "bg-red-500" : "bg-green-500"}`}></span>
+                 <span className="text-white">{playersOnline} Jogadores</span>
+               </div>
+            </div>
+          </div>
       </div>
     </header>
   );

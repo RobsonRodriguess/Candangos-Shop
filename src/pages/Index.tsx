@@ -1,5 +1,4 @@
-import TopBar from '@/components/TopBar';
-import Header from '@/components/Header';
+// 👇 Removi o import do TopBar e do Header (já está no App.tsx)
 import HeroSection from '@/components/HeroSection';
 import NewsSection from '@/components/NewsSection';
 import Sidebar from '@/components/Sidebar';
@@ -9,11 +8,11 @@ import Footer from '@/components/Footer';
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Bar */}
-      <TopBar />
-
-      {/* Header */}
-      <Header />
+      
+      {/* 🚨 REMOVIDOS:
+         <TopBar /> -> Não existe mais.
+         <Header /> -> Já colocamos no App.tsx para aparecer em todas as páginas.
+      */}
 
       {/* Hero Section */}
       <HeroSection />
@@ -34,7 +33,9 @@ const Index = () => {
       </main>
 
       {/* Shop Section */}
-      <ShopSection />
+      <div id="loja">
+         <ShopSection />
+      </div>
 
       {/* Footer */}
       <Footer />

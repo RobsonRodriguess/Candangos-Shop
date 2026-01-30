@@ -10,6 +10,7 @@ const supabase = createClient(
 const Sidebar = () => {
   const [memberCount, setMemberCount] = useState<number>(0);
   const [members, setMembers] = useState<any[]>([]);
+  const [inviteLink, setInviteLink] = useState<string>("#"); // Link do convite dinâmico
   const [loadingSupporters, setLoadingSupporters] = useState(true);
   const [topSupporters, setTopSupporters] = useState<any[]>([]);
 
@@ -18,15 +19,18 @@ const Sidebar = () => {
       try {
         const res = await fetch(`https://discord.com/api/guilds/1461132354096726171/widget.json`);
         const data = await res.json();
-        setMemberCount(data.presence_count || 0);
-        setMembers(data.members?.slice(0, 5) || []);
+        
+        if (data) {
+            setMemberCount(data.presence_count || 0);
+            setMembers(data.members?.slice(0, 5) || []);
+            setInviteLink(data.instant_invite || "https://discord.gg/Hcu7y4Cz"); // Fallback se a API não der link
+        }
       } catch (e) { console.error(e); }
     };
 
     const fetchSupporters = async () => {
       try {
         setLoadingSupporters(true);
-        // Puxa os pedidos aprovados para o ranking
         const { data, error } = await supabase
           .from('orders')
           .select('discord_username, items, status')
@@ -56,7 +60,6 @@ const Sidebar = () => {
     fetchDiscord();
     fetchSupporters();
 
-    // Realtime: Atualiza o ranking assim que você aprova um pedido
     const channel = supabase.channel('sidebar_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchSupporters())
       .subscribe();
@@ -66,30 +69,62 @@ const Sidebar = () => {
 
   return (
     <div className="space-y-8">
-      {/* CARD DISCORD */}
-      <div className="bg-[#050505] border border-white/5 rounded-[2.5rem] p-7 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center justify-between mb-8 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="bg-[#5865F2]/20 p-2.5 rounded-2xl">
-              <Users className="w-5 h-5 text-[#5865F2]" />
-            </div>
-            <h3 className="font-black text-white text-xs uppercase tracking-[0.3em]">Membros</h3>
-          </div>
-          <span className="text-[10px] font-black text-green-500 bg-green-400/10 px-3 py-1.5 rounded-full animate-pulse">
-            {memberCount} ONLINE
-          </span>
+      
+      {/* --- CARD DISCORD (DESIGN MEMBROS) --- */}
+      <div className="bg-[#000000] rounded-[2rem] p-6 shadow-2xl relative overflow-hidden border border-white/5 flex flex-col justify-between min-h-[220px]">
+        
+        {/* Header: Ícone + Título + Status */}
+        <div className="flex items-center justify-between mb-6">
+           <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#1e2030] rounded-2xl flex items-center justify-center">
+                 <Users className="w-6 h-6 text-[#5865F2]" />
+              </div>
+              <h3 className="font-display font-bold text-white tracking-widest text-sm bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                 MEMBROS
+              </h3>
+           </div>
+           
+           <div className="bg-[#111315] px-3 py-1.5 rounded-full border border-white/5">
+              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider flex items-center gap-1.5">
+                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                 {memberCount} ONLINE
+              </span>
+           </div>
         </div>
-        <div className="flex -space-x-4 mb-8">
-          {members.map((m, i) => (
-            <img key={i} src={m.avatar_url} className="w-12 h-12 rounded-full border-[6px] border-[#050505]" alt="membro" />
-          ))}
+
+        {/* Lista de Avatares (Sobrepostos) */}
+        <div className="flex -space-x-3 mb-8 pl-2">
+           {members.length > 0 ? members.map((m, i) => (
+             <div key={i} className="relative group cursor-pointer transition-transform hover:-translate-y-1">
+                <img 
+                  src={m.avatar_url} 
+                  className="w-10 h-10 rounded-full border-[3px] border-[#000000] object-cover bg-[#2b2d31]" 
+                  alt={m.username} 
+                  title={m.username}
+                />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black rounded-full" />
+             </div>
+           )) : (
+             // Placeholder se a API demorar
+             [1,2,3,4,5].map((_, i) => (
+               <div key={i} className="w-10 h-10 rounded-full border-[3px] border-[#000000] bg-[#1e2030] animate-pulse" />
+             ))
+           )}
         </div>
-        <button className="w-full py-5 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-3xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95">
+
+        {/* Botão Roxo Grande */}
+        <a 
+          href={inviteLink}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full py-4 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-[#5865F2]/20 flex items-center justify-center gap-2 mt-auto"
+        >
           Entrar no Discord
-        </button>
+        </a>
+
       </div>
 
-      {/* CARD RANKING DE APOIO COM CHUVA DE OURO */}
+      {/* --- CARD RANKING (MANTIDO IGUAL) --- */}
       <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-white/5 rounded-[2.5rem] p-7 shadow-2xl relative overflow-hidden">
         <div className="flex items-center gap-4 mb-10 border-b border-white/5 pb-6">
           <Trophy className="w-7 h-7 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" />

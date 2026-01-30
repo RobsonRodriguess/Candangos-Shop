@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, CheckCircle, XCircle, Calendar, ArrowLeft, Tag } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Calendar, ArrowLeft, Tag, Wallet, ShoppingBag, Truck } from 'lucide-react';
 
 // Configuração do Supabase
 const supabase = createClient(
@@ -36,78 +36,154 @@ export default function MyOrders() {
     setLoading(false);
   }
 
+  // Cálculos de Estatísticas
+  const totalSpent = orders.reduce((acc, order) => order.status === 'approved' ? acc + order.total_amount : acc, 0);
+  const totalOrders = orders.length;
+  const activeOrders = orders.filter(o => o.status === 'pending').length;
+
   return (
-    <div className="min-h-screen bg-background py-10 px-4 font-sans text-foreground bg-[url(@/assets/bg-pattern.png)] bg-fixed bg-cover">
-      <div className="container mx-auto max-w-4xl">
+    <div className="min-h-screen bg-[#0a0a0a] py-8 px-4 font-sans text-foreground overflow-hidden relative">
+      
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="container mx-auto max-w-5xl relative z-10">
         
-        <div className="flex items-center gap-4 mb-8">
-            <button onClick={() => navigate('/')} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <ArrowLeft className="w-6 h-6 text-white" />
-            </button>
-            <h1 className="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 flex items-center gap-2">
-              <Package className="w-8 h-8 text-primary" /> Meus Pedidos
-            </h1>
+        {/* --- HEADER DA PÁGINA --- */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div className="flex items-center gap-4">
+                <button onClick={() => navigate('/')} className="group p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:scale-105">
+                    <ArrowLeft className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                </button>
+                <div>
+                    <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
+                       <Truck className="w-8 h-8 text-green-500" /> Histórico de Drop
+                    </h1>
+                    <p className="text-sm text-gray-500">Gerencie suas aquisições da guilda.</p>
+                </div>
+            </div>
         </div>
 
+        {/* --- STATS CARDS --- */}
+        {!loading && orders.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-[#121212] border border-white/5 p-5 rounded-xl flex items-center gap-4 relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Wallet size={60} /></div>
+                    <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20 text-green-500"><Wallet size={24} /></div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Investido</p>
+                        <p className="text-2xl font-bold text-white">R$ {totalSpent.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                </div>
+                <div className="bg-[#121212] border border-white/5 p-5 rounded-xl flex items-center gap-4 relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ShoppingBag size={60} /></div>
+                    <div className="p-3 bg-orange-500/10 rounded-lg border border-orange-500/20 text-orange-500"><ShoppingBag size={24} /></div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total de Pedidos</p>
+                        <p className="text-2xl font-bold text-white">{totalOrders}</p>
+                    </div>
+                </div>
+                <div className="bg-[#121212] border border-white/5 p-5 rounded-xl flex items-center gap-4 relative overflow-hidden group">
+                     <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Clock size={60} /></div>
+                     <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-500"><Clock size={24} /></div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Em Processamento</p>
+                        <p className="text-2xl font-bold text-white">{activeOrders}</p>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {loading ? (
-            <div className="text-center py-20 animate-pulse text-white/50">Carregando histórico...</div>
+           <div className="space-y-4">
+               {[1,2,3].map(i => (
+                   <div key={i} className="h-32 bg-white/5 rounded-xl animate-pulse border border-white/5" />
+               ))}
+           </div>
         ) : orders.length === 0 ? (
-            <div className="rpg-card bg-black/60 p-10 text-center">
-               <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-               <h3 className="text-xl font-bold mb-2 text-white">Nenhum pedido encontrado</h3>
-               <p className="text-muted-foreground">Você ainda não comprou nada na nossa loja.</p>
+            <div className="flex flex-col items-center justify-center py-20 bg-[#121212] border border-dashed border-white/10 rounded-2xl">
+               <div className="p-6 bg-white/5 rounded-full mb-4 animate-pulse">
+                   <Package className="w-12 h-12 text-gray-500" />
+               </div>
+               <h3 className="text-xl font-bold mb-2 text-white">Inventário Vazio</h3>
+               <p className="text-gray-500 mb-6">Você ainda não adquiriu nenhum item da guilda.</p>
+               <button onClick={() => navigate('/')} className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors">
+                   Ir para a Loja
+               </button>
             </div>
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order.id} className="rpg-card bg-black/60 hover:border-primary/40 transition-all p-6 group border border-white/5 shadow-xl">
-                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 border-b border-white/5 pb-4">
-                    <div>
-                        <div className="text-[10px] text-muted-foreground font-mono mb-1 uppercase tracking-widest">ID: #{order.payment_id}</div>
+          <div className="space-y-5">
+            {orders.map((order, index) => (
+              <div 
+                key={order.id} 
+                className="group bg-[#121212] hover:bg-[#161616] border border-white/5 hover:border-green-500/30 rounded-xl overflow-hidden transition-all duration-300 shadow-lg relative"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Status Bar Lateral */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 transition-colors ${
+                     order.status === 'approved' ? 'bg-green-500' :
+                     order.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                }`} />
+
+                {/* --- HEADER DO CARD --- */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-5 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex flex-col gap-1 pl-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-mono text-gray-500 uppercase tracking-widest">Pedido</span>
+                            <span className="text-sm font-mono font-bold text-white bg-white/10 px-2 py-0.5 rounded">#{order.payment_id || order.id.slice(0,8)}</span>
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(order.created_at).toLocaleDateString()} às {new Date(order.created_at).toLocaleTimeString()}
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(order.created_at).toLocaleDateString()} às {new Date(order.created_at).toLocaleTimeString().slice(0,5)}
                         </div>
                     </div>
                     
-                    <div className={`px-4 py-1 rounded-full text-[10px] font-black flex items-center gap-2 w-fit tracking-tighter ${
-                        order.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                        order.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                        'bg-red-500/20 text-red-400 border border-red-500/30'
+                    <div className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 uppercase tracking-wide border ${
+                        order.status === 'approved' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                        order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                        'bg-red-500/10 text-red-400 border-red-500/20'
                     }`}>
-                        {order.status === 'approved' && <CheckCircle className="w-3 h-3" />}
-                        {order.status === 'pending' && <Clock className="w-3 h-3" />}
-                        {order.status === 'cancelled' && <XCircle className="w-3 h-3" />}
-                        {order.status === 'approved' ? 'APROVADO' : order.status === 'pending' ? 'PENDENTE' : 'CANCELADO'}
+                        {order.status === 'approved' && <CheckCircle className="w-3.5 h-3.5" />}
+                        {order.status === 'pending' && <Clock className="w-3.5 h-3.5 animate-pulse" />}
+                        {order.status === 'cancelled' && <XCircle className="w-3.5 h-3.5" />}
+                        {order.status === 'approved' ? 'Entregue' : order.status === 'pending' ? 'Processando' : 'Cancelado'}
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    {order.items.map((item: any, index: number) => (
-                        <div key={index} className="flex items-center gap-4 bg-black/40 p-3 rounded-lg border border-white/5">
-                            <img src={item.image} alt="Item" className="w-10 h-10 object-contain drop-shadow-md" />
-                            <div className="flex-1">
-                                <p className="font-bold text-sm text-white">{item.title}</p>
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Quantidade: {item.quantity}</p>
+                {/* --- CONTEÚDO (ITENS) --- */}
+                <div className="p-5 pl-7 space-y-4">
+                    {order.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center p-2">
+                                <img src={item.image} alt="Item" className="w-full h-full object-contain drop-shadow-sm" />
                             </div>
-                            <div className="font-mono text-primary text-sm font-bold">
+                            <div className="flex-1">
+                                <p className="font-bold text-sm text-gray-200 group-hover:text-white transition-colors">{item.title}</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Qtd: {item.quantity}x</p>
+                            </div>
+                            <div className="text-sm font-bold text-gray-400">
                                 R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* --- SEÇÃO DE TOTAIS E CUPOM --- */}
-                <div className="mt-4 flex flex-col items-end gap-1 pt-2">
+                {/* --- FOOTER (TOTAIS) --- */}
+                <div className="bg-black/20 p-4 pl-7 flex flex-col items-end gap-1 border-t border-white/5">
                     {order.coupon_used && (
-                      <div className="flex items-center gap-1.5 text-[10px] text-primary/80 font-bold bg-primary/10 px-2 py-1 rounded-md border border-primary/20 mb-1">
+                      <div className="flex items-center gap-1.5 text-[10px] text-green-400 font-bold bg-green-500/10 px-2 py-1 rounded border border-green-500/20 mb-1">
                         <Tag className="w-3 h-3" />
-                        PODER UTILIZADO: <span className="text-primary uppercase tracking-wider">{order.coupon_used}</span>
+                        CUPOM: {order.coupon_used.toUpperCase()}
                       </div>
                     )}
-                    <span className="text-lg font-bold text-white">
-                      Total: <span className="text-primary">R$ {order.total_amount.toFixed(2).replace('.', ',')}</span>
-                    </span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-xs text-gray-500 font-bold uppercase">Total do Pedido</span>
+                        <span className="text-xl font-bold text-white text-shadow-sm">
+                           R$ {order.total_amount.toFixed(2).replace('.', ',')}
+                        </span>
+                    </div>
                 </div>
               </div>
             ))}
