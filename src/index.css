@@ -9,10 +9,8 @@
     /* Main theme colors */
     --background: 0 0% 10%;
     --foreground: 0 0% 95%;
-
     --card: 0 0% 12%;
     --card-foreground: 0 0% 95%;
-
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 95%;
 
@@ -97,6 +95,28 @@
 }
 
 @layer components {
+  /* --- ANIMAÇÃO CHUVA DE OURO --- */
+  @keyframes gold-rain {
+    0% {
+      transform: translateY(-20px) rotate(0deg);
+      opacity: 0;
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(80px) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .gold-particle {
+    animation: gold-rain 2.5s linear infinite;
+    filter: drop-shadow(0 0 5px hsl(51 100% 50% / 0.6));
+    pointer-events: none;
+  }
+  /* ------------------------------ */
+
   .text-gold-gradient {
     background: linear-gradient(180deg, hsl(51 100% 60%) 0%, hsl(43 100% 45%) 100%);
     -webkit-background-clip: text;
@@ -180,3 +200,4 @@
     font-family: 'Roboto Condensed', sans-serif;
   }
 }
+

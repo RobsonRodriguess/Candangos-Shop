@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { 
   ArrowLeft, Trash2, Minus, Plus, Check, Mail, Gamepad2, 
-  Copy, ExternalLink, QrCode, ShieldCheck, User, CreditCard, Wallet, Tag, Sparkles
+  Copy, ExternalLink, QrCode, ShieldCheck, User, CreditCard, Wallet, Tag, Sparkles, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -78,6 +78,7 @@ const Checkout = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'cart' | 'info' | 'payment' | 'pix_waiting' | 'success'>('cart');
+  const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
   
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string, discount: number } | null>(null);
@@ -94,16 +95,34 @@ const Checkout = () => {
     const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setUserLoggedIn(true);
         setFormData(prev => ({
           ...prev,
           email: user.email || '',
           confirmEmail: user.email || '',
           username: user.user_metadata.full_name || user.user_metadata.name || prev.username
         }));
+      } else {
+        setUserLoggedIn(false);
       }
     };
     loadUserData();
   }, []);
+
+  // --- FUNÇÃO PARA LOGIN DIRETO VIA DISCORD ---
+  const handleDiscordLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: window.location.href // Volta exatamente para onde o usuário estava
+        }
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast.error("Erro ao invocar o Discord: " + error.message);
+    }
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -129,7 +148,6 @@ const Checkout = () => {
     if (!couponCode.trim()) return;
     setIsValidatingCoupon(true);
     try {
-      // 1. Verificar se o cupom existe e está ativo
       const { data: coupon, error } = await supabase
         .from('coupons')
         .select('*')
@@ -143,7 +161,6 @@ const Checkout = () => {
         return;
       }
 
-      // 2. Verificar se o usuário já usou este cupom (Check no Front para UX rápida)
       const { data: alreadyUsed } = await supabase
         .from('orders')
         .select('id')
@@ -184,6 +201,14 @@ const Checkout = () => {
   };
 
   const startPayment = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Guerreiro deslogado!', {
+        description: 'Conecte-se ao Discord para registrar sua jornada e suas compras.',
+      });
+      return;
+    }
+
     if (!paymentMethod) { toast.error('Selecione um método de pagamento'); return; }
     setIsProcessing(true);
     try {
@@ -215,6 +240,7 @@ const Checkout = () => {
       if (step === 'success') return; 
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        
         const { data: existingOrder } = await supabase
             .from('orders')
             .select('id')
@@ -227,6 +253,9 @@ const Checkout = () => {
             return;
         }
 
+        const discordName = user?.user_metadata?.full_name || user?.user_metadata?.name || formData.username;
+        const discordAvatar = user?.user_metadata?.avatar_url || null;
+
         const { error: dbError } = await supabase
           .from('orders')
           .insert({
@@ -235,8 +264,10 @@ const Checkout = () => {
             status: status,
             total_amount: finalTotal,
             items: items, 
+            user_name: discordName,
+            user_avatar: discordAvatar,
             discord_username: formData.username,
-            buyer_email: formData.email, // Importante para a trava de cupom
+            buyer_email: formData.email, 
             coupon_used: appliedCoupon?.code || null
           });
 
@@ -359,8 +390,20 @@ const Checkout = () => {
                     </div>
                   </div>
                 ))}
+                
                 <div className="pt-4">
-                   <button onClick={() => setStep('info')} className="rpg-button w-full py-4 text-lg">Continuar para Dados</button>
+                   {userLoggedIn ? (
+                      <button onClick={() => setStep('info')} className="rpg-button w-full py-4 text-lg">Continuar para Dados</button>
+                   ) : (
+                      <div className="rpg-card border-red-500/20 bg-red-500/5 p-6 text-center">
+                         <Lock className="w-8 h-8 text-red-500 mx-auto mb-3" />
+                         <h3 className="text-white font-bold text-lg mb-1">Acesso Restrito</h3>
+                         <p className="text-white/40 text-sm mb-4">Você precisa se conectar ao Discord para realizar compras.</p>
+                         <button onClick={handleDiscordLogin} className="rpg-button w-full py-3 flex items-center justify-center gap-2">
+                           <Gamepad2 className="w-5 h-5" /> Fazer Login Agora
+                         </button>
+                      </div>
+                   )}
                 </div>
               </div>
             )}
@@ -419,8 +462,12 @@ const Checkout = () => {
                      <p className="text-muted-foreground py-2 text-white/60">Selecione uma opção acima para continuar.</p>
                    ) : (
                      <div className="animate-in fade-in slide-in-from-bottom-2">
-                        <button onClick={startPayment} disabled={isProcessing} className="rpg-button w-full py-4 text-lg flex items-center justify-center gap-2">
-                          {isProcessing ? "Processando..." : "Finalizar Compra"} <ExternalLink className="w-5 h-5" />
+                        <button 
+                          onClick={startPayment} 
+                          disabled={isProcessing || !userLoggedIn} 
+                          className={`rpg-button w-full py-4 text-lg flex items-center justify-center gap-2 ${!userLoggedIn ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                        >
+                          {isProcessing ? "Processando..." : (userLoggedIn ? "Finalizar Compra" : "Login necessário")} <ExternalLink className="w-5 h-5" />
                         </button>
                      </div>
                    )}
@@ -446,7 +493,6 @@ const Checkout = () => {
             )}
           </div>
 
-          {/* LADO DIREITO (RESUMO COM ANIMAÇÕES) */}
           <div className="h-fit space-y-4">
             <motion.div layout className="rpg-card lg:sticky lg:top-8 bg-black/60 backdrop-blur-xl border-white/5 p-6 shadow-2xl relative overflow-hidden">
               <AnimatePresence>
@@ -468,7 +514,6 @@ const Checkout = () => {
                 ))}
               </div>
 
-              {/* --- UI DO CUPOM COM ANIMAÇÃO --- */}
               <div className="mb-6 pt-4 border-t border-white/5 space-y-3 relative">
                  <label className="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-1">
                    <Tag className="w-3 h-3" /> Pergaminho de Desconto
