@@ -1,28 +1,38 @@
-# 🛒 Hywer Store - Sistema de E-commerce para Servidores (Hytale/Minecraft)
+# 🛡️ Candangos Guild Store
 
-Plataforma completa de vendas de itens digitais (VIPs, Coins, Itens) com integração automática de pagamentos e entrega.
+> A loja oficial e portal da guilda Candangos no servidor Hywer do jogo Hytale.
 
-## 🚀 Funcionalidades Principais
+![Project Status](https://img.shields.io/badge/status-online-green)
+![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20Supabase%20%7C%20Tailwind-blue)
 
-### 👤 Área do Jogador
-- **Login Social:** Autenticação segura via Discord.
-- **Carrinho de Compras:** UX fluida e responsiva (Mobile/Desktop).
-- **Histórico:** O jogador vê todos os seus pedidos e status.
+## 📸 Screenshots
 
-### 💳 Pagamentos
-- **Pix Automático:** Geração de QR Code e liberação imediata.
-- **Cartão de Crédito:** Integração transparente.
-- **Segurança:** Dados processados via Serverless Functions (Supabase).
+<div align="center">
+  <img src="./assets/home.png" alt="Tela Inicial" width="700"/>
+  <br/><br/>
+  <img src="./assets/admin.png" alt="Painel Admin" width="700"/>
+</div>
 
-### 👮 Painel Administrativo (Dono)
-- **Dashboard Financeiro:** Faturamento total e vendas do mês.
-- **Gestão de Pedidos:** Busca por Nick, ID ou Status.
-- **Segurança:** Acesso restrito via RLS (Row Level Security).
+## ⚔️ Sobre o Projeto
 
-## 🛠 Tecnologias Usadas
-- **Frontend:** React, TypeScript, TailwindCSS, Vite.
-- **Backend:** Supabase (Auth, Database, Edge Functions).
-- **Pagamentos:** Integração Mercado Pago / Stripe API.
+Este projeto é uma **Landing Page + E-commerce** desenvolvida para gerenciar a venda de itens, kits e VIPs para o servidor. O sistema conta com integração em tempo real com o Discord, autenticação via OAuth e um painel administrativo seguro.
 
+### ✨ Funcionalidades Principais
+
+* **🛒 Loja Interativa:** Carrinho de compras com persistência e cálculo dinâmico.
+* **💳 Checkout Transparente:** Sistema pronto para pagamentos via PIX (integração visual e lógica de backend).
+* **🔐 Autenticação Discord:** Login social para validar identidade dos jogadores.
+* **🛡️ Painel Admin:** Dashboard protegido (RLS) para gestão de pedidos e métricas financeiras.
+* **📡 Integração Realtime:** Widget de status do Discord e feed de notícias sincronizado.
+* **📱 Responsividade Total:** UI adaptada para Mobile e Desktop.
+
+## 🛠️ Tecnologias Utilizadas
+
+* **Frontend:** React (Vite), TypeScript
+* **Estilização:** Tailwind CSS, Framer Motion (Animações), Lucide React (Ícones)
+* **Backend / BaaS:** Supabase (Auth, Database, Edge Functions)
+* **Segurança:** Row Level Security (RLS) no PostgreSQL
+  
 ---
-*Desenvolvido por Robson Rodrigues*
+
+Desenvolvido por **Robson Rodrigues**.
