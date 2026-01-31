@@ -19,7 +19,7 @@ const Header = () => {
   const navItems = [
     { name: 'Início', href: '#', type: 'anchor' },
     { name: 'Loja', href: '#loja', type: 'anchor' },
-    { name: 'Discord', href: 'https://discord.gg/GqJnprnS', type: 'external' }, // Link real
+    { name: 'Discord', href: 'https://discord.gg/HTftKRAK', type: 'external' }, // Link real
     { name: 'Notícias', href: '#noticias', type: 'anchor' }
   ];
 

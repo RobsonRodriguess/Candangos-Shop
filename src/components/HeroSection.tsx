@@ -67,7 +67,7 @@ const HeroSection = () => {
           
           {/* Botão Discord (Outline Laranja) */}
           <a 
-            href="https://discord.gg/GqJnprnS" 
+            href="https://discord.gg/HTftKRAK" 
             target="_blank" 
             rel="noopener noreferrer"
             className="w-full sm:w-auto group inline-flex h-12 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/5 px-8 font-medium text-orange-400 transition-all hover:bg-orange-500/10 hover:border-orange-500 hover:text-orange-300"

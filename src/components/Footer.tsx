@@ -57,7 +57,7 @@ const Footer = () => {
                 Privacidade
               </button>
               <a 
-                href="https://discord.gg/GqJnprnS" 
+                href="https://discord.gg/HTftKRAK" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="hover:text-[#5865F2] transition-colors flex items-center gap-2 px-2 py-1"

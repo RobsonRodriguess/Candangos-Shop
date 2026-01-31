@@ -11,9 +11,10 @@ import emailjs from '@emailjs/browser';
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração Supabase
+
 const supabase = createClient(
-  'https://vrlswaqvswzcapbzshcp.supabase.co', 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
+'https://vrlswaqvswzcapbzshcp.supabase.co',
+'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
 );
 
 // Configuração EmailJS
@@ -197,39 +198,83 @@ const Checkout = () => {
     return true;
   };
 
-  const startPayment = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('Login necessário para continuar.');
-      return;
-    }
+const checkEventEligibility = async () => {
+  // Identifica o ticket pelo ID 1 ou pelo nome conforme seu banco
+  const hasEventTicket = items.some(item => item.id === 1 || item.title.includes("Inscrição"));
+  if (!hasEventTicket) return true;
 
-    if (!paymentMethod) { toast.error('Selecione um método de pagamento'); return; }
-    setIsProcessing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('checkout', {
-        body: {
-          items,
-          buyer_name: formData.username, 
-          buyer_email: formData.email,
-          payment_method: paymentMethod,
-          coupon_code: appliedCoupon?.code || null
-        }
-      });
-      if (data.error) throw new Error(data.error);
-      if (data.type === 'pix_generated') {
-        setPixData(data);
-        setStep('pix_waiting');
-      } 
-      else if (data.type === 'redirect') {
-        window.location.href = data.url;
+  // Busca pedidos APROVADOS para o e-mail digitado no checkout
+  const { data, error } = await supabase
+    .from('orders')
+    .select('items')
+    .eq('buyer_email', formData.email.trim())
+    .eq('status', 'approved');
+
+  if (error) return true;
+
+  // Verifica se o ticket já existe em alguma compra anterior
+  const alreadyBought = data?.some(order => 
+    Array.isArray(order.items) && order.items.some((i: any) => i.title.includes("Inscrição") || i.id === 1)
+  );
+
+  if (alreadyBought) {
+    toast.error("LIMITE EXCEDIDO!", {
+      description: "Você já possui uma inscrição aprovada para este Torneio."
+    });
+    return false;
+  }
+  return true;
+};
+
+const startPayment = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    toast.error('Login necessário para continuar.');
+    return;
+  }
+
+  // 🔒 Ativa o carregamento
+  setIsProcessing(true);
+
+  // 🛡️ Roda a verificação de elegibilidade antes de gerar o Pix
+  const canProceed = await checkEventEligibility();
+  if (!canProceed) {
+    setIsProcessing(false);
+    return; // Interrompe o processo se já comprou
+  }
+
+  if (!paymentMethod) {
+    toast.error('Selecione um método de pagamento');
+    setIsProcessing(false);
+    return;
+  }
+
+  // ... segue o seu código original de geração de cobrança
+  try {
+    const { data, error } = await supabase.functions.invoke('checkout', {
+      body: {
+        items,
+        buyer_name: formData.username, 
+        buyer_email: formData.email,
+        payment_method: paymentMethod,
+        coupon_code: appliedCoupon?.code || null
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar pagamento.');
-    } finally {
-      setIsProcessing(false);
+    });
+
+    if (data?.error) throw new Error(data.error);
+
+    if (data.type === 'pix_generated') {
+      setPixData(data);
+      setStep('pix_waiting');
+    } else if (data.type === 'redirect') {
+      window.location.href = data.url;
     }
-  };
+  } catch (error: any) {
+    toast.error(error.message || 'Erro ao processar pagamento.');
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const finishOrder = async (status: string, paymentId: any) => {
       if (step === 'success') return; 

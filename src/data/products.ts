@@ -1,6 +1,6 @@
-// Importando as imagens locais que você salvou
 import aventureiroImg from '@/assets/Rank-Aventureiro.png';
-import apoiadorImg from '@/assets/Rank-Apoiador.png';
+import apoiadorImg from '@/assets/Rank-Apoador.png';
+import ticketImg from '@/assets/Ticket1.png';
 
 export interface Product {
   id: number;
@@ -8,46 +8,28 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  image: any; // Alterado para aceitar o objeto da imagem importada
+  image: any;
   featured?: boolean;
-  category: 'ranks' | 'items' | 'keys';
+  category: 'ranks' | 'items' | 'keys' | 'eventos';
   benefits?: string[];
 }
 
 export const products: Product[] = [
-  // --- RANK AVENTUREIRO ---
-  {
-    id: 1,
-    title: "Rank Aventureiro",
-    description: "Perfeito para quem está começando sua jornada no mundo de Hywer.",
-    price: 29.90,
-    image: aventureiroImg, // ✅ Usando sua imagem local
-    featured: true,
-    category: 'ranks',
-    benefits: [
-      "Acesso a área VIP",
-      "Kit inicial exclusivo",
-      "Tag especial no chat",
-      "2x XP em eventos"
-    ]
-  },
 
-  // --- RANK APOIADOR ---
-  {
-    id: 2,
-    title: "Rank Apoiador",
-    description: "Para os verdadeiros heróis que apoiam a comunidade Hywer.",
-    price: 49.90,
-    originalPrice: 69.90,
-    image: apoiadorImg, // ✅ Usando sua imagem local
+  // --- NOVO CARD: EVENTO X1 ---
+ {
+    id: 1,
+    title: "Inscrição: Torneio X1",
+    description: "Evento eliminatório. Avance nas chaves e conquiste o topo da guilda!",
+    price: 10.00,
+    image: ticketImg,
     featured: true,
-    category: 'ranks',
+    category: 'eventos',
     benefits: [
-      "Todos os benefícios do Aventureiro",
-      "Acesso ao servidor beta",
-      "Comandos exclusivos",
-      "3x XP em eventos",
-      "Pet exclusivo"
+      "Vaga garantida no torneio",
+      "Participação em chaves eliminatórias",
+      "Prêmios para os 3 primeiros",
+      "Tag exclusiva [COMPETIDOR]"
     ]
   }
 ];
@@ -55,6 +37,7 @@ export const products: Product[] = [
 export const categories = [
   { id: 'all', name: 'Todos', icon: 'Grid' },
   { id: 'ranks', name: 'Ranks', icon: 'Crown' },
+  { id: 'eventos', name: 'Eventos', icon: 'Sword' }, // 👈 Adicionei aqui
   { id: 'items', name: 'Itens', icon: 'Package' },
   { id: 'keys', name: 'Chaves', icon: 'Key' },
 ];
