@@ -12,15 +12,16 @@ import { createClient } from '@supabase/supabase-js';
 
 // Configuração Supabase
 
+// Configuração Supabase - AGORA PROTEGIDO 🛡️
 const supabase = createClient(
-'https://vrlswaqvswzcapbzshcp.supabase.co',
-'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-// Configuração EmailJS
-const SERVICE_ID = "service_eem5brc"; 
-const TEMPLATE_ID = "template_pk19neg";
-const PUBLIC_KEY = "z5D7x94VJzfiiK8tk";
+// Configuração EmailJS - AGORA PROTEGIDO 🛡️
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID; 
+const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 // Função auxiliar de email (Mantida original)
 const generateEmailHTML = (userName: string, items: any[], total: string, paymentId: string) => {
