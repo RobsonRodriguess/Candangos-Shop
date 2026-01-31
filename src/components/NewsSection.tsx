@@ -88,14 +88,10 @@ const NewsSection = () => {
   };
 
   return (
-    // 👇 ADICIONEI O ID AQUI: id="noticias"
-    // scroll-mt-28 garante que o Header não fique em cima do título quando clicar
     <section id="noticias" className="w-full relative overflow-hidden bg-[#0a0a0a] rounded-2xl border border-white/5 p-6 md:p-8 scroll-mt-28">
       
-      {/* Grid Pattern no Fundo */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-      {/* Cabeçalho */}
       <div className="relative z-10 flex items-center justify-between mb-8 pb-4 border-b border-white/5">
         <div className="flex items-center gap-3">
             <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
@@ -116,7 +112,6 @@ const NewsSection = () => {
         </div>
       </div>
 
-      {/* Lista de Notícias */}
       <div className="space-y-4 relative z-10">
         {loading ? (
           <>
@@ -136,7 +131,6 @@ const NewsSection = () => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex gap-4">
-                {/* Avatar */}
                 <div className="shrink-0">
                     <img 
                       src={news.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"} 
@@ -146,7 +140,6 @@ const NewsSection = () => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    {/* Header do Post */}
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="font-bold text-white text-sm group-hover:text-green-400 transition-colors">
                             {news.author}
@@ -159,17 +152,17 @@ const NewsSection = () => {
                         </span>
                     </div>
 
-                    {/* Conteúdo */}
                     {news.title && (
                        <h3 className="text-base font-bold text-gray-200 mb-1 leading-tight group-hover:text-white transition-colors">
                          {news.title}
                        </h3>
                     )}
-                    <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap font-sans mb-3 line-clamp-4">
+                    
+                    {/* ALTERAÇÃO AQUI: removido o line-clamp-4 para mostrar o texto todo */}
+                    <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap font-sans mb-3">
                         {news.excerpt}
                     </p>
 
-                    {/* Botão Link */}
                     <a 
                       href={news.discord_link} 
                       target="_blank" 
