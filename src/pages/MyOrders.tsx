@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, CheckCircle, XCircle, Calendar, ArrowLeft, Tag, Wallet, ShoppingBag, Truck } from 'lucide-react';
+import { 
+  Package, Clock, CheckCircle, XCircle, Calendar, ArrowLeft, 
+  Tag, Wallet, ShoppingBag, Truck 
+} from 'lucide-react';
 
-// Configuração do Supabase
+// --- CONFIGURAÇÃO SUPABASE SEGURA ---
 const supabase = createClient(
-  'https://vrlswaqvswzcapbzshcp.supabase.co', 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
 export default function MyOrders() {
@@ -37,7 +40,7 @@ export default function MyOrders() {
   }
 
   // Cálculos de Estatísticas
-  const totalSpent = orders.reduce((acc, order) => order.status === 'approved' ? acc + order.total_amount : acc, 0);
+  const totalSpent = orders.reduce((acc, order) => order.status === 'approved' ? acc + (Number(order.total_amount) || 0) : acc, 0);
   const totalOrders = orders.length;
   const activeOrders = orders.filter(o => o.status === 'pending').length;
 
@@ -86,8 +89,8 @@ export default function MyOrders() {
                     </div>
                 </div>
                 <div className="bg-[#121212] border border-white/5 p-5 rounded-xl flex items-center gap-4 relative overflow-hidden group">
-                     <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Clock size={60} /></div>
-                     <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-500"><Clock size={24} /></div>
+                      <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Clock size={60} /></div>
+                      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-500"><Clock size={24} /></div>
                     <div>
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Em Processamento</p>
                         <p className="text-2xl font-bold text-white">{activeOrders}</p>
@@ -181,7 +184,7 @@ export default function MyOrders() {
                     <div className="flex items-baseline gap-2">
                         <span className="text-xs text-gray-500 font-bold uppercase">Total do Pedido</span>
                         <span className="text-xl font-bold text-white text-shadow-sm">
-                           R$ {order.total_amount.toFixed(2).replace('.', ',')}
+                           R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}
                         </span>
                     </div>
                 </div>

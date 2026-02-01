@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Package, ShieldAlert, ChevronDown, Gamepad2, IdCard } from 'lucide-react'; // Adicionei IdCard
+import { LogOut, User, Package, ShieldAlert, ChevronDown, Gamepad2, IdCard, Clover } from 'lucide-react'; // Adicionei Clover
 import { toast } from 'sonner';
 
 // --- CONFIGURAÇÃO SUPABASE PROTEGIDA 🛡️ ---
@@ -97,16 +97,24 @@ export function AuthButton() {
                             </button>
                         )}
                         
-                        {/* 2. Botão CARTEIRINHA (Novo!) */}
+                        {/* 2. Botão SORTE DIÁRIA (Novo!) */}
+                        <button 
+                            onClick={() => { navigate('/perfil', { state: { initialView: 'roulette' } }); setMenuOpen(false); }} 
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors mb-1"
+                        >
+                            <Clover size={16} /> Sorte Diária
+                        </button>
+
+                        {/* 3. Botão PERFIL (Carteirinha) */}
                         <button 
                             onClick={() => { navigate('/perfil'); setMenuOpen(false); }} 
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-white hover:bg-white/10 rounded-lg transition-colors group"
                         >
-                            <IdCard size={16} className="text-yellow-500 group-hover:scale-110 transition-transform" /> 
-                            Perfil
+                            <IdCard size={16} className="text-gray-400 group-hover:text-yellow-500 transition-colors" /> 
+                            Meu Perfil
                         </button>
 
-                        {/* 3. Botão Meus Pedidos */}
+                        {/* 4. Botão Meus Pedidos */}
                         <button 
                             onClick={() => { navigate('/meus-pedidos'); setMenuOpen(false); }} 
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -116,7 +124,7 @@ export function AuthButton() {
 
                         <div className="h-px bg-white/5 my-1" />
                         
-                        {/* 4. Botão Sair */}
+                        {/* 5. Botão Sair */}
                         <button 
                             onClick={handleLogout} 
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"

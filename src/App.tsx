@@ -18,6 +18,7 @@ import PlayerProfile from "./components/PlayerProfile"; // Carteirinha Nova
 import CartDrawer from "./components/CartDrawer";
 import CartButton from "./components/CartButton";
 import Header from "./components/Header"; 
+import KonamiCode from "./components/KonamiCode"; // <--- IMPORTADO O SEGREDO
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           
+          {/* O OUVINTE DO CÓDIGO FICA AQUI, INVISÍVEL */}
+          <KonamiCode />
+
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />

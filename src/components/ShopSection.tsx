@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { ShoppingCart, Star, Check, Sparkles, Zap, Tag } from 'lucide-react';
+import { ShoppingCart, Star, Check, Zap } from 'lucide-react';
 import { products, categories, Product } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+
+// Instância do som (carrega uma vez para não ter delay)
+const buySound = new Audio('/buy.mp3');
+buySound.volume = 0.5; // 50% do volume para não estourar o ouvido
 
 const ShopSection = () => {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -13,6 +17,10 @@ const ShopSection = () => {
     : products.filter(p => p.category === activeCategory);
 
   const handleAddToCart = (product: Product) => {
+    // 🔊 Toca o som
+    buySound.currentTime = 0; // Reinicia o som se clicar rápido
+    buySound.play().catch(() => {}); // Ignora erro se o navegador bloquear
+
     addItem({
       id: product.id,
       title: product.title,
