@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Package, ShieldAlert, ChevronDown, Gamepad2 } from 'lucide-react';
+import { LogOut, User, Package, ShieldAlert, ChevronDown, Gamepad2, IdCard } from 'lucide-react'; // Adicionei IdCard
 import { toast } from 'sonner';
 
-// Configuração do Supabase
+// --- CONFIGURAÇÃO SUPABASE PROTEGIDA 🛡️ ---
 const supabase = createClient(
-  'https://vrlswaqvswzcapbzshcp.supabase.co', 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybHN3YXF2c3d6Y2FwYnpzaGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODI1NjYsImV4cCI6MjA4NTA1ODU2Nn0.YooTRks2-zy4hqAIpSQmhDpTCf134QHrzl7Ry5TbKn8'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const ADMIN_EMAIL = 'vinicciusdede@gmail.com'; 
+// Lista de Admins
+const ADMIN_EMAILS = [
+  'vinicciusdede@gmail.com', 
+  'pedrocandidotolentino@gmail.com'
+]; 
 
 export function AuthButton() {
   const navigate = useNavigate();
@@ -19,7 +23,11 @@ export function AuthButton() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -41,7 +49,7 @@ export function AuthButton() {
   if (user) {
     const avatarUrl = user.user_metadata.avatar_url;
     const discordName = user.user_metadata.full_name || user.user_metadata.name || "Guerreiro";
-    const isAdmin = user.email === ADMIN_EMAIL;
+    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
 
     return (
       <div className="relative">
@@ -65,7 +73,8 @@ export function AuthButton() {
             <div className="flex flex-col items-start text-left">
                 <span className="text-xs font-bold text-white leading-none mb-0.5 max-w-[100px] truncate">{discordName}</span>
                 <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1">
-                    {isAdmin ? <span className="text-red-400">ADMIN</span> : "Membro"} <ChevronDown size={10} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                    {isAdmin ? <span className="text-red-400 font-bold">ADMIN</span> : "Membro"} 
+                    <ChevronDown size={10} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
                 </span>
             </div>
         </button>
@@ -74,31 +83,45 @@ export function AuthButton() {
         {menuOpen && (
             <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#121212] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                
+                <div className="absolute right-0 top-full mt-2 w-56 bg-[#121212] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                     <div className="p-2 space-y-1">
+                        
+                        {/* 1. Botão Admin (Só aparece para admins) */}
                         {isAdmin && (
                             <button 
                                 onClick={() => { navigate('/admin'); setMenuOpen(false); }} 
-                                className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-red-500/20 mb-2"
                             >
-                                <ShieldAlert size={14} /> PAINEL ADMIN
+                                <ShieldAlert size={16} /> PAINEL ADMIN
                             </button>
                         )}
                         
+                        {/* 2. Botão CARTEIRINHA (Novo!) */}
+                        <button 
+                            onClick={() => { navigate('/perfil'); setMenuOpen(false); }} 
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-white hover:bg-white/10 rounded-lg transition-colors group"
+                        >
+                            <IdCard size={16} className="text-yellow-500 group-hover:scale-110 transition-transform" /> 
+                            Perfil
+                        </button>
+
+                        {/* 3. Botão Meus Pedidos */}
                         <button 
                             onClick={() => { navigate('/meus-pedidos'); setMenuOpen(false); }} 
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                         >
-                            <Package size={14} /> Meus Pedidos
+                            <Package size={16} /> Meus Pedidos
                         </button>
 
                         <div className="h-px bg-white/5 my-1" />
                         
+                        {/* 4. Botão Sair */}
                         <button 
                             onClick={handleLogout} 
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                         >
-                            <LogOut size={14} /> Sair da Conta
+                            <LogOut size={16} /> Sair da Conta
                         </button>
                     </div>
                 </div>

@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, Menu, X, ExternalLink } from 'lucide-react';
+import { Copy, Check, Menu, X, ExternalLink, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-// 👇 Importando o seu botão de login real
+// 👇 Importando seu botão de Auth atualizado
 import { AuthButton } from './AuthButton'; 
 
 const Header = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // --- ESTADOS ---
   const [isScrolled, setIsScrolled] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -13,27 +17,25 @@ const Header = () => {
   const [playersOnline, setPlayersOnline] = useState<number | string>("...");
   
   const serverIP = "hytale.hywer.net";
-  const SERVER_ID = '1461132354096726171'; // Seu ID do Discord
+  const SERVER_ID = '1461132354096726171'; // Seu ID
 
-  // --- CONFIGURAÇÃO DOS LINKS ---
+  // --- MENU ---
   const navItems = [
-    { name: 'Início', href: '#', type: 'anchor' },
-    { name: 'Loja', href: '#loja', type: 'anchor' },
-    { name: 'Discord', href: 'https://discord.gg/HTftKRAK', type: 'external' }, // Link real
-    { name: 'Notícias', href: '#noticias', type: 'anchor' }
+    { name: 'Início', href: '/', type: 'internal' },
+    { name: 'Loja', href: '/#loja', type: 'anchor' },
+    { name: 'Ranking', href: '/ranking', type: 'internal', icon: Trophy }, // Novo!
+    { name: 'Discord', href: 'https://discord.gg/HTftKRAK', type: 'external' },
+    { name: 'Notícias', href: '/#noticias', type: 'anchor' }
   ];
 
-  // --- EFEITOS (Scroll + Online Count) ---
+  // --- EFEITOS ---
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
 
     const fetchOnlineCount = async () => {
       try {
         const response = await fetch(`https://discord.com/api/guilds/${SERVER_ID}/widget.json`);
         const data = await response.json();
-        
         if (data && data.presence_count !== undefined) {
           setPlayersOnline(data.presence_count);
         } else {
@@ -63,6 +65,20 @@ const Header = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleNavigation = (e: any, item: any) => {
+    // Se for link interno (/ranking ou /), usa o navigate do React para não recarregar a página
+    if (item.type === 'internal') {
+        e.preventDefault();
+        navigate(item.href);
+        setMobileMenuOpen(false);
+    }
+    // Se for âncora (#loja), deixa o padrão ou ajusta se estivermos em outra página
+    else if (item.type === 'anchor') {
+        setMobileMenuOpen(false);
+        // O href já é '/#loja', então funciona de qualquer lugar
+    }
+  };
+
   return (
     <header 
       className={`
@@ -77,8 +93,6 @@ const Header = () => {
 
         {/* --- ESQUERDA: STATUS DO SERVIDOR --- */}
         <div className="flex items-center gap-4">
-          
-          {/* Botão Copiar IP */}
           <button 
             onClick={copyIp}
             className={`
@@ -88,11 +102,7 @@ const Header = () => {
               hover:border-green-500/50 hover:bg-green-500/10
             `}
           >
-            {copied ? (
-                <Check className="w-3.5 h-3.5 text-green-400" />
-            ) : (
-                <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400" />
-            )}
+            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400" />}
             <span className="text-xs font-mono font-bold text-gray-300 group-hover:text-white tracking-wide hidden xs:inline-block">
               {serverIP}
             </span>
@@ -101,7 +111,6 @@ const Header = () => {
             </span>
           </button>
 
-          {/* Player Count (Desktop/Tablet) */}
           <div className="hidden md:flex items-center gap-2 text-xs font-bold text-gray-400">
             <span className="relative flex h-2 w-2">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${playersOnline === "OFF" ? "bg-red-400" : "bg-green-400"}`}></span>
@@ -121,10 +130,15 @@ const Header = () => {
                 <a 
                   key={item.name} 
                   href={item.href}
+                  onClick={(e) => handleNavigation(e, item)}
                   target={item.type === 'external' ? "_blank" : "_self"}
                   rel={item.type === 'external' ? "noopener noreferrer" : ""}
-                  className="text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-green-400 transition-colors flex items-center gap-1"
+                  className={`
+                    text-sm font-bold uppercase tracking-wide transition-colors flex items-center gap-1.5
+                    ${location.pathname === item.href ? 'text-green-400' : 'text-gray-400 hover:text-white'}
+                  `}
                 >
+                    {item.icon && <item.icon size={14} className={location.pathname === item.href ? 'text-green-400' : 'text-gray-500'} />}
                     {item.name}
                     {item.type === 'external' && <ExternalLink className="w-3 h-3 opacity-50" />}
                 </a>
@@ -133,13 +147,10 @@ const Header = () => {
 
         {/* --- DIREITA: AUTH & MENU MOBILE --- */}
         <div className="flex items-center gap-3">
-            
-            {/* AuthButton */}
             <div className={`${isScrolled ? '' : 'bg-black/40 backdrop-blur-sm rounded-full'}`}>
                <AuthButton />
             </div>
 
-            {/* Botão Menu Mobile */}
             <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 text-white ml-1 hover:bg-white/10 rounded-lg transition-colors"
@@ -149,7 +160,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* --- MENU MOBILE EXPANSÍVEL --- */}
+      {/* --- MENU MOBILE --- */}
       <div className={`
         lg:hidden fixed top-[60px] left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl overflow-hidden transition-all duration-300 ease-in-out
         ${mobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'}
@@ -159,17 +170,22 @@ const Header = () => {
                 <a 
                   key={item.name} 
                   href={item.href}
+                  onClick={(e) => handleNavigation(e, item)}
                   target={item.type === 'external' ? "_blank" : "_self"}
                   rel={item.type === 'external' ? "noopener noreferrer" : ""}
-                  className="px-4 py-3 rounded-lg bg-white/5 text-gray-300 font-bold uppercase text-sm hover:bg-white/10 hover:text-green-400 transition-all flex items-center justify-between"
-                  onClick={() => setMobileMenuOpen(false)} // Fecha o menu ao clicar
+                  className={`
+                    px-4 py-3 rounded-lg bg-white/5 font-bold uppercase text-sm hover:bg-white/10 transition-all flex items-center justify-between
+                    ${location.pathname === item.href ? 'text-green-400 border border-green-500/30' : 'text-gray-300'}
+                  `}
                 >
-                    {item.name}
+                    <span className="flex items-center gap-2">
+                        {item.icon && <item.icon size={16} />}
+                        {item.name}
+                    </span>
                     {item.type === 'external' && <ExternalLink className="w-4 h-4 opacity-50" />}
                 </a>
             ))}
             
-            {/* Players Count no Menu Mobile */}
             <div className="mt-2 px-4 py-3 bg-black/40 rounded-lg border border-white/5 flex items-center justify-between text-xs text-gray-400 font-bold uppercase">
                <span>Status do Servidor</span>
                <div className="flex items-center gap-2">
