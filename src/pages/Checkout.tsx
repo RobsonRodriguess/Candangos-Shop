@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import emailjs from '@emailjs/browser';
 import { createClient } from '@supabase/supabase-js';
+import SuccessConfetti from '@/components/SuccessConfetti'; // Importado aqui
 
 // Configuração Supabase
 const supabase = createClient(
@@ -347,6 +348,10 @@ const Checkout = () => {
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4 relative overflow-hidden">
+        
+        {/* --- ADICIONADO A CHUVA DE DINHEIRO AQUI --- */}
+        <SuccessConfetti />
+        
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
         <div className="max-w-md w-full relative z-10 bg-[#121212] border border-green-500/30 p-8 rounded-2xl text-center shadow-2xl">
           <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.3)] animate-pulse">

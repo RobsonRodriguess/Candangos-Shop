@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 
-// Páginas
+// --- PÁGINAS ---
 import Index from "./pages/Index";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders"; 
@@ -13,20 +13,24 @@ import NotFound from "./pages/NotFound";
 import HallOfFame from "./pages/HallOfFame"; // Ranking
 import Admin from "./pages/Admin";
 
-// Componentes
-import PlayerProfile from "./components/PlayerProfile"; // Carteirinha Nova
+// --- COMPONENTES ---
+import PlayerProfile from "./components/PlayerProfile";
 import CartDrawer from "./components/CartDrawer";
 import CartButton from "./components/CartButton";
 import Header from "./components/Header"; 
-import KonamiCode from "./components/KonamiCode"; // <--- IMPORTADO O SEGREDO
+
+// --- COMPONENTES ESPECIAIS (O SEGREDO DO SITE) ---
+import KonamiCode from "./components/KonamiCode"; // Easter Egg (Snake Game)
+import Shoutbox from "./components/Shoutbox"; // Chat Flutuante
+import AFKScreen from "./components/AFKScreen"; // Protetor de Tela Matrix
 
 const queryClient = new QueryClient();
 
-// Controla onde o Header aparece
+// Controla onde o Header aparece (Layout)
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   
-  // Rotas "Full Screen" ou Dashboard onde o Header atrapalha
+  // Rotas onde o Header NÃO deve aparecer (Dashboards ou Fullscreen)
   const hideHeaderRoutes = ["/meus-pedidos", "/admin", "/checkout", "/perfil"]; 
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
@@ -42,13 +46,25 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CartProvider>
+        
+        {/* Notificações do Sistema */}
         <Toaster />
         <Sonner />
+        
         <BrowserRouter>
           
-          {/* O OUVINTE DO CÓDIGO FICA AQUI, INVISÍVEL */}
+          {/* --- CAMADA DE INTERAÇÃO GLOBAL (Roda por cima de tudo) --- */}
+          
+          {/* 1. Protetor de Tela Matrix (Se ficar 1min parado) */}
+          <AFKScreen />
+
+          {/* 2. Ouve o código secreto (↑ ↑ ↓ ↓ ← → ← → B A) */}
           <KonamiCode />
 
+          {/* 3. Chat Global Flutuante (Bar do Submundo) */}
+          <Shoutbox />
+
+          {/* --- ROTEAMENTO --- */}
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -61,6 +77,7 @@ const App = () => (
             </Routes>
           </Layout>
 
+          {/* Componentes do Carrinho (Sempre disponíveis) */}
           <CartDrawer />
           <CartButton />
           
