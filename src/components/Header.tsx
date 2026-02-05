@@ -3,7 +3,7 @@ import { Copy, Check, Menu, X, ExternalLink, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-// 👇 Importando seu botão de Auth atualizado
+// 👇 Importando seu botão de Auth (Certifique-se que ele está em src/components/AuthButton.tsx)
 import { AuthButton } from './AuthButton'; 
 
 const Header = () => {
@@ -17,13 +17,13 @@ const Header = () => {
   const [playersOnline, setPlayersOnline] = useState<number | string>("...");
   
   const serverIP = "hytale.hywer.net";
-  const SERVER_ID = '1461132354096726171'; // Seu ID
+  const SERVER_ID = '1461132354096726171'; // Seu ID do Discord
 
   // --- MENU ---
   const navItems = [
     { name: 'Início', href: '/', type: 'internal' },
     { name: 'Loja', href: '/#loja', type: 'anchor' },
-    { name: 'Ranking', href: '/ranking', type: 'internal', icon: Trophy }, // Novo!
+    { name: 'Ranking', href: '/ranking', type: 'internal', icon: Trophy },
     { name: 'Discord', href: 'https://discord.gg/HTftKRAK', type: 'external' },
     { name: 'Notícias', href: '/#noticias', type: 'anchor' }
   ];
@@ -49,6 +49,8 @@ const Header = () => {
 
     window.addEventListener('scroll', handleScroll);
     fetchOnlineCount();
+    
+    // Atualiza a cada 60 segundos
     const interval = setInterval(fetchOnlineCount, 60000);
 
     return () => {
@@ -65,17 +67,20 @@ const Header = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleNavigation = (e: any, item: any) => {
-    // Se for link interno (/ranking ou /), usa o navigate do React para não recarregar a página
+  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, item: typeof navItems[0]) => {
+    // Se for link interno (/ranking ou /), usa o navigate do React para não recarregar a página (SPA)
     if (item.type === 'internal') {
         e.preventDefault();
         navigate(item.href);
         setMobileMenuOpen(false);
     }
-    // Se for âncora (#loja), deixa o padrão ou ajusta se estivermos em outra página
+    // Se for âncora (#loja), fecha o menu e deixa o navegador rolar
     else if (item.type === 'anchor') {
         setMobileMenuOpen(false);
-        // O href já é '/#loja', então funciona de qualquer lugar
+        // Se estiver em outra página, primeiro navega para home depois rola (Opcional, dependendo da sua lógica de âncora)
+        if (location.pathname !== '/' && item.href.startsWith('/#')) {
+            // Lógica opcional se precisar ir para home antes de rolar
+        }
     }
   };
 

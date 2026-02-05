@@ -12,6 +12,7 @@ import MyOrders from "./pages/MyOrders";
 import NotFound from "./pages/NotFound";
 import HallOfFame from "./pages/HallOfFame"; // Ranking
 import Admin from "./pages/Admin";
+import Tournament from "./pages/Tournament"; // <--- ADICIONADO: Página do Torneio Ao Vivo
 
 // --- COMPONENTES ---
 import PlayerProfile from "./components/PlayerProfile";
@@ -31,6 +32,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   
   // Rotas onde o Header NÃO deve aparecer (Dashboards ou Fullscreen)
+  // Nota: Mantivemos o Header no /torneio para facilitar a navegação, 
+  // mas se quiser tela cheia total, adicione "/torneio" aqui na lista.
   const hideHeaderRoutes = ["/meus-pedidos", "/admin", "/checkout", "/perfil"]; 
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
@@ -73,6 +76,7 @@ const App = () => (
               <Route path="/meus-pedidos" element={<MyOrders />} />
               <Route path="/ranking" element={<HallOfFame />} />
               <Route path="/perfil" element={<PlayerProfile />} />
+              <Route path="/torneio" element={<Tournament />} /> {/* <--- ADICIONADO: Rota do Torneio */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
