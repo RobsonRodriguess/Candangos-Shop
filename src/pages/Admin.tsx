@@ -381,11 +381,13 @@ export default function Admin() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-1">
-                                                {order.items.slice(0, 2).map((i: any, idx: number) => (
+                                                {/* CORREÇÃO DO SLICE: ADICIONADO O OPERADOR ?. OU VALOR PADRÃO */}
+                                                {(order.items || []).slice(0, 2).map((i: any, idx: number) => (
                                                     <span key={idx} className="text-gray-400 text-xs flex items-center gap-1.5">
                                                         <span className="w-1 h-1 rounded-full bg-gray-600"></span>{i.title} <span className="opacity-50">x{i.quantity}</span>
                                                     </span>
                                                 ))}
+                                                {(order.items || []).length > 2 && <span className="text-[10px] text-gray-600 pl-2.5">+{order.items.length - 2} outros itens...</span>}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right"><span className="font-mono font-bold text-white text-base">R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}</span></td>
