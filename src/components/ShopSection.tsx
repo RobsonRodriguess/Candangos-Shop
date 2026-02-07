@@ -98,7 +98,8 @@ const ShopSection = () => {
                       <Star className="w-3 h-3 fill-black" /> Destaque
                     </span>
                   )}
-                  {product.originalPrice && (
+                  {/* Lógica da Tag de Desconto Automática */}
+                  {product.originalPrice && product.originalPrice > product.price && (
                     <span className="bg-red-500 text-white px-2 py-1 rounded text-[10px] font-black shadow-lg uppercase tracking-wider">
                       -{Math.round((1 - product.price / product.originalPrice) * 100)}% OFF
                     </span>
@@ -149,8 +150,9 @@ const ShopSection = () => {
                 {/* Preço e Ação */}
                 <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between gap-4">
                   <div>
+                    {/* Renderiza o preço antigo riscado SE ele existir */}
                     {product.originalPrice && (
-                      <span className="block text-[10px] text-gray-600 line-through font-bold">
+                      <span className="block text-[10px] text-gray-400 line-through font-bold">
                         R$ {product.originalPrice.toFixed(2).replace('.', ',')}
                       </span>
                     )}
